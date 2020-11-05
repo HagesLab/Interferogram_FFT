@@ -8,33 +8,30 @@ from interferogram_functions import FFT_intr, import_MAP, prep_map
 import matplotlib.pyplot as plt
 import numpy as np
 
-path = r"C:\Users\Chuck\Dropbox (UFL)\UF\TRPL Computer\Measurments\20201016\145521"
+path = r"C:\Users\Chuck\Dropbox (UFL)\Hages Lab Files\TRPL Data\Ruiquan\20201104\153345"
 pos_data, time_data, map_data = import_MAP(path)
 pos_data = pos_data - 0.03478240614951511    #Taken from shift_factor output in the _INTR analysis script for this data
-apodization_width=0.7
+
+apodization_width=0.6
 apod_type="BH"    # "None" "Gauss" "Triangle" "Boxcar" "BH"
 resample="True"
-resample_factor=2
-
-#ADD MANUAL SHIFT by shift factor - currently done above manually
-#WHAT ABOUT INTENSITY CORRECTION? Ask NIREOS
-shift="False"
+resample_factor=4
 pad_test="True"
 padfactor=4
-mean_sub = "True"       
+mean_sub = "True"         
 
 #Plot Raw Data
 raw_timemesh, raw_posmesh = np.meshgrid(time_data,pos_data)
 plt.figure(1, dpi=120)
-plt.contourf(raw_posmesh,raw_timemesh,np.log(map_data),100)
-plt.ylim(5,70)
+plt.contourf(raw_posmesh,raw_timemesh,np.log(map_data))
+plt.ylim(5,25)
 plt.ylabel('Time / ns')
 plt.xlabel('Position / mm')
 
-preFFT_pos, preFFT_map = prep_map(pos_data,map_data,apodization_width,apod_type=apod_type,resample=resample,resample_factor=resample_factor,shift=shift,pad_test=pad_test,padfactor=padfactor,mean_sub=mean_sub,plots="True")
+preFFT_pos, preFFT_map = prep_map(pos_data,map_data,apodization_width,apod_type=apod_type,resample=resample,resample_factor=resample_factor,shift="False",pad_test=pad_test,padfactor=padfactor,mean_sub=mean_sub,plots="True")
 
 #trim time-scale data because it is dreadfully slow
-rangeval = [7,50]  #ns
+rangeval = [5,25]  #ns
 index = [(np.abs(time_data-np.min(rangeval))).argmin(),(np.abs(time_data-np.max(rangeval))).argmin()]
 preFFT_map = preFFT_map[:,np.min(index):np.max(index)]
 time_data=time_data[np.min(index):np.max(index)]
@@ -61,15 +58,15 @@ start_wave = 400
 end_wave = 1000
 
 plt.figure(2, dpi=120)
-plt.contourf(wavemesh,timemesh,np.log(build_TRES),100,vmin=0)
+plt.contourf(wavemesh,timemesh,build_TRES,100,vmin=0)
 plt.xlim(start_wave,end_wave)
 plt.ylabel('Time / ns')
 plt.xlabel('Wavelength / nm')
 plt.colorbar()
 
 #Plot averged PL over given range
-AveragePL = "False"
-rangeval = [11,16]  #ns
+AveragePL = "True"
+rangeval = [7.5,25]  #ns
 
 plt.figure(3, dpi=120)
 if AveragePL == "True":
@@ -84,7 +81,7 @@ plt.yscale('linear')
 
 #Plot averged PL decay over given range
 AverageTRPL = "True"
-rangeval = [750,950]  #nm
+rangeval = [610,750]  #nm
 
 plt.figure(4, dpi=120)
 if AverageTRPL == "True":
