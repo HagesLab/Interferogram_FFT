@@ -7,6 +7,7 @@ Created on Sat Oct 24 21:44:47 2020
 import numpy as np
 import Interf_calibration1D
 from scipy.interpolate import interp1d
+import Interf_calibration2D
 import matplotlib.pyplot as plt
 import glob
 import csv
@@ -158,3 +159,90 @@ def FFT_intr(preFFT_pos,preFFT_data,plots="False",correct="True",scale="linear")
             plt.show()
     
     return wave, FFT_intr_trim
+
+def import_MAP(path):
+    allFiles = []
+    b = glob.glob(path + "/*.txt")  # glob. lists the filename and path
+    allFiles.extend(b)
+    
+    
+    for i in range(len(allFiles)):
+        namestest = allFiles[i].split('_')[-1]
+        if namestest == r"POS.txt":
+            with open(allFiles[i],'r') as j:
+                pos_data = np.array(list(csv.reader(j,delimiter="\t")),dtype='float')[0,:]
+                samplename = os.path.split(allFiles[i])[-1].split(".")[0]
+                samplename = samplename.replace("_POS","")
+        elif namestest == r"MAP.txt":
+            with open(allFiles[i],'r') as j:
+                map_data = np.array(list(csv.reader(j,delimiter="\t")),dtype='float')
+        elif namestest == r"TIME.txt":
+            with open(allFiles[i],'r') as j:
+                time_data = np.array(list(csv.reader(j,delimiter="\t")),dtype='float')[0,:]
+    
+    # Discard the zero columns
+    standard=np.std(map_data, axis=0)
+    indexes=np.asarray(np.nonzero(standard))
+    map_data=map_data[:,indexes[0][0]:indexes[0][-1]]
+    time_data =time_data[indexes[0][0]:indexes[0][-1]]/1e3
+    
+    return pos_data, time_data, map_data
+    
+
+def prep_map(pos_data,map_data,apodization_width,apod_type="BH",mean_sub="True",resample="True",resample_factor=2,shift="True",pad_test="True",padfactor=4,plots="True"):
+    map_data, pos_data = Interf_calibration2D.interf_calibration2D(map_data,pos_data)   
+    prep_build=[]
+    pos_data_raw = pos_data
+    for i in range(map_data.shape[1]):
+        intr_data = map_data[:,i]
+        pos_data = pos_data_raw
+        if mean_sub == "True":
+            intr_data = intr_data-np.mean(intr_data)
+        if resample == "True":
+            fcubic = interp1d(pos_data, intr_data, kind='cubic')
+            pos_data = np.linspace(pos_data[0],pos_data[-1],endpoint=True,num=len(pos_data)*resample_factor)
+            intr_data = fcubic(pos_data)
+        index_pos = np.argmin(abs(pos_data))
+        if shift == "True":
+            index_intr = np.argmax(intr_data)  
+            shiftfactor=(pos_data[index_intr]-pos_data[index_pos])
+            pos_data = pos_data-shiftfactor
+        if apod_type != "None":
+            if apod_type == "Gauss":
+                intr_func = np.exp(-(2.24*(pos_data)/apodization_width)**2)
+            if apod_type == "BH":
+                intr_func = np.zeros(len(pos_data))
+                for i in range(len(intr_func)):
+                    if abs(pos_data[i]) <= apodization_width:
+                        A0, A1, A2, A3 = 0.42323, 0.49755, 0.07922, 0.01168
+                        intr_func[i] = A0+A1*np.cos(np.pi*pos_data[i]/apodization_width)+A2*np.cos(2*np.pi*pos_data[i]/apodization_width)+A3*np.cos(3*np.pi*pos_data[i]/apodization_width)
+                    elif abs(pos_data[i]) > apodization_width:
+                        intr_func[i] = 0
+            if apod_type == "Triangle":
+                intr_func = np.zeros(len(pos_data))
+                for i in range(len(intr_func)):
+                    if abs(pos_data[i]) <= apodization_width:
+                        intr_func[i] = 1-abs(pos_data[i])/apodization_width
+                    elif abs(pos_data[i]) > apodization_width:
+                        intr_func[i] = 0
+            if apod_type == "Boxcar":
+                intr_func = np.zeros(len(pos_data))
+                for i in range(len(intr_func)):
+                    if abs(pos_data[i]) <= apodization_width:
+                        intr_func[i] = 1
+                    elif abs(pos_data[i]) > apodization_width:
+                        intr_func[i] = 0
+            intr_data = intr_data*intr_func
+        posdiff=np.diff(pos_data)[0]
+        if pad_test == "True":
+            padlen = int(padfactor*(2**np.ceil(np.log(len(intr_data))/np.log(2))))-len(intr_data)
+            intr_data = np.pad(intr_data,(0,int(padlen)),'constant', constant_values=(0))
+            pos_data = np.append(pos_data,np.linspace(pos_data[-1]+posdiff,(pos_data[-1]+posdiff)+padlen*posdiff,num=padlen))
+        
+        index_pos = np.argmin(abs(pos_data))    
+        left_axis_intr, right_axis_intr = intr_data[0:index_pos+1], intr_data[index_pos+1:]
+        left_axis_pos, right_axis_pos = pos_data[0:index_pos+1], pos_data[index_pos+1:]
+        preFFT_data, preFFT_pos = np.concatenate((right_axis_intr,left_axis_intr)), np.concatenate((right_axis_pos,left_axis_pos))   
+        prep_build.append(preFFT_data)
+        
+    return preFFT_pos, np.array(prep_build,dtype='float').T
