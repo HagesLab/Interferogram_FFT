@@ -104,9 +104,11 @@ def prep_interferogram(pos_data,intr_data,apodization_width,apod_type="BH",mean_
         
     return preFFT_pos, preFFT_data, shiftfactor
 
-def FFT_intr(preFFT_pos,preFFT_data,plots="False",correct="True",scale="linear"):
+def FFT_intr(preFFT_pos,preFFT_data, preFFT_data2, plots="False",correct="True",scale="linear"):
     #Perform FFT
-    FFT_intr = np.fft.rfft(preFFT_data)
+    ## Currently [m] but this can take a [m,n] data right away - freq becomes [m,n]
+    FFT_intr = np.fft.rfft(preFFT_data) # over m - m=8192 becomes m'=4097
+    FFT_intr2 = np.fft.rfft(preFFT_data2, axis=0)
     if correct == "True":
         #Phase Corrected
         FFT_real = FFT_intr.real*np.cos(np.angle(FFT_intr))
@@ -115,6 +117,8 @@ def FFT_intr(preFFT_pos,preFFT_data,plots="False",correct="True",scale="linear")
     elif correct == "False":
         FFT_final = FFT_intr.real + FFT_intr.imag
     freq = np.fft.rfftfreq(preFFT_pos.shape[-1],np.diff(preFFT_pos)[0])
+    
+    
         
     #Import calibration for WL
     items = os.listdir(".")
@@ -129,7 +133,8 @@ def FFT_intr(preFFT_pos,preFFT_data,plots="False",correct="True",scale="linear")
     #Trim FFT data to calibrated WLs
     FFT_intr_trim=[]
     freq_trim=[]
-    for i in range(len(FFT_intr)):
+    
+    for i in range(len(FFT_intr)): # For each m'
         if freq[i] >= np.min(reciprocal) and freq[i] <= np.max(reciprocal):
             FFT_intr_trim = np.append(FFT_intr_trim,FFT_final[i])
             freq_trim = np.append(freq_trim,freq[i])
@@ -193,45 +198,43 @@ def prep_map(pos_data,map_data,apodization_width,apod_type="BH",mean_sub="True",
     map_data, pos_data = Interf_calibration2D.interf_calibration2D(map_data,pos_data)   
     prep_build=[]
     pos_data_raw = pos_data
-    for i in range(map_data.shape[1]):
-        intr_data = map_data[:,i]
+    
+    if mean_sub == "True":
+        map_data = map_data - np.mean(map_data, axis=0)
+        
+    if resample == "True":
+        fcubic = interp1d(pos_data_raw, map_data, kind='cubic', axis=0)
+        pos_data_raw = np.linspace(pos_data_raw[0],pos_data_raw[-1],endpoint=True,num=len(pos_data_raw)*resample_factor)
+        map_data = fcubic(pos_data_raw)
+    
+    for i in range(map_data.shape[1]): # For each timestep
+        intr_data = map_data[:,i] # Take a column
         pos_data = pos_data_raw
-        if mean_sub == "True":
-            intr_data = intr_data-np.mean(intr_data)
-        if resample == "True":
-            fcubic = interp1d(pos_data, intr_data, kind='cubic')
-            pos_data = np.linspace(pos_data[0],pos_data[-1],endpoint=True,num=len(pos_data)*resample_factor)
-            intr_data = fcubic(pos_data)
+        #pos_data2 = np.add.outer(pos_data_raw, np.zeros(map_data.shape[1]))
+        
         index_pos = np.argmin(abs(pos_data))
         if shift == "True":
-            index_intr = np.argmax(intr_data)  
+            index_intr = np.argmax(intr_data)
+            #index_intr2 = np.argmax(intr_data, axis=1)
             shiftfactor=(pos_data[index_intr]-pos_data[index_pos])
+            #shiftfactor2 = np.array([pos_data[i] - pos_data[index_pos] for i in index_intr2])
+            #pos_data2
             pos_data = pos_data-shiftfactor
         if apod_type != "None":
             if apod_type == "Gauss":
                 intr_func = np.exp(-(2.24*(pos_data)/apodization_width)**2)
             if apod_type == "BH":
-                intr_func = np.zeros(len(pos_data))
-                for i in range(len(intr_func)):
-                    if abs(pos_data[i]) <= apodization_width:
-                        A0, A1, A2, A3 = 0.42323, 0.49755, 0.07922, 0.01168
-                        intr_func[i] = A0+A1*np.cos(np.pi*pos_data[i]/apodization_width)+A2*np.cos(2*np.pi*pos_data[i]/apodization_width)+A3*np.cos(3*np.pi*pos_data[i]/apodization_width)
-                    elif abs(pos_data[i]) > apodization_width:
-                        intr_func[i] = 0
-            if apod_type == "Triangle":
-                intr_func = np.zeros(len(pos_data))
-                for i in range(len(intr_func)):
-                    if abs(pos_data[i]) <= apodization_width:
-                        intr_func[i] = 1-abs(pos_data[i])/apodization_width
-                    elif abs(pos_data[i]) > apodization_width:
-                        intr_func[i] = 0
+                A0, A1, A2, A3 = 0.42323, 0.49755, 0.07922, 0.01168                
+                intr_func = np.where(abs(pos_data) <= apodization_width, 
+                                      A0+A1*np.cos(np.pi*pos_data/apodization_width)+A2*np.cos(2*np.pi*pos_data/apodization_width)+A3*np.cos(3*np.pi*pos_data/apodization_width),
+                                      0)
+            if apod_type == "Triangle":                        
+                intr_func = np.where(abs(pos_data) <= apodization_width,
+                                      1-abs(pos_data)/apodization_width,
+                                      0)
             if apod_type == "Boxcar":
-                intr_func = np.zeros(len(pos_data))
-                for i in range(len(intr_func)):
-                    if abs(pos_data[i]) <= apodization_width:
-                        intr_func[i] = 1
-                    elif abs(pos_data[i]) > apodization_width:
-                        intr_func[i] = 0
+                intr_func = np.where(abs(pos_data) <= apodization_width, 1, 0)
+
             intr_data = intr_data*intr_func
         posdiff=np.diff(pos_data)[0]
         if pad_test == "True":
