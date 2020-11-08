@@ -104,21 +104,9 @@ def prep_interferogram(pos_data,intr_data,apodization_width,apod_type="BH",mean_
         
     return preFFT_pos, preFFT_data, shiftfactor
 
-def FFT_intr(preFFT_pos,preFFT_data, preFFT_data2, plots="False",correct="True",scale="linear"):
-    #Perform FFT
-    ## Currently [m] but this can take a [m,n] data right away - freq becomes [m,n]
-    FFT_intr = np.fft.rfft(preFFT_data) # over m - m=8192 becomes m'=4097
-    FFT_intr2 = np.fft.rfft(preFFT_data2, axis=0)
-    if correct == "True":
-        #Phase Corrected
-        FFT_real = FFT_intr.real*np.cos(np.angle(FFT_intr))
-        FFT_imag = FFT_intr.imag*np.sin(np.angle(FFT_intr))
-        FFT_final = FFT_real + FFT_imag
-    elif correct == "False":
-        FFT_final = FFT_intr.real + FFT_intr.imag
+def FFT_intr(preFFT_pos,preFFT_data, plots="False",correct="True",scale="linear"):
+    #Do as much preparation outside of the loop over preFFT_data's timesteps as possible
     freq = np.fft.rfftfreq(preFFT_pos.shape[-1],np.diff(preFFT_pos)[0])
-    
-    
         
     #Import calibration for WL
     items = os.listdir(".")
@@ -130,40 +118,57 @@ def FFT_intr(preFFT_pos,preFFT_data, preFFT_data2, plots="False",correct="True",
     second_row = (ref.iloc[1])
     wavelength = first_row.to_numpy(dtype='float64')
     reciprocal = second_row.to_numpy(dtype='float64')
-    #Trim FFT data to calibrated WLs
-    FFT_intr_trim=[]
-    freq_trim=[]
+    min_freq = np.min(reciprocal)
+    max_freq = np.max(reciprocal)
+    # Is freq[] always in ascending order? If so this can be made much simpler with array slicing
+    select = np.intersect1d(np.where(freq >= min_freq), np.where(freq <= max_freq))
     
-    for i in range(len(FFT_intr)): # For each m'
-        if freq[i] >= np.min(reciprocal) and freq[i] <= np.max(reciprocal):
-            FFT_intr_trim = np.append(FFT_intr_trim,FFT_final[i])
-            freq_trim = np.append(freq_trim,freq[i])
-    #Compute WL
     fn = interp1d(reciprocal, wavelength, kind="linear")
-    wave = fn(freq_trim)
     
-    if plots == "True":
-        plt.figure(1, dpi=120)
-        plt.plot(freq,FFT_intr.real,label="Real")
-        plt.plot(freq,FFT_intr.imag,label="Imag")
-        plt.yscale(scale)
-        plt.title("Raw FFT")
-        plt.xlabel("Freq.")
-        plt.legend()
-        plt.show()
+    # Do FFT on the data
+    FFT_intr_full = np.fft.rfft(preFFT_data, axis=0)
 
-        if correct == "True":
-            plt.figure(2, dpi=120)
-            plt.plot(freq,FFT_real,label="Real")
-            plt.plot(freq,FFT_imag,label="Imag")
-            #plt.plot(freq,np.angle(FFT_intr))
+    if correct == "True":
+        #Phase Corrected
+        FFT_real_full = FFT_intr_full.real*np.cos(np.angle(FFT_intr_full))
+        FFT_imag_full = FFT_intr_full.imag*np.sin(np.angle(FFT_intr_full))
+        FFT_final_full = FFT_real_full + FFT_imag_full
+    elif correct == "False":
+        FFT_final_full = FFT_intr_full.real + FFT_intr_full.imag
+
+    # Trim according to calibrations
+    freq_trim = freq[select]
+    FFT_intr_trim_full = FFT_final_full[select]
+    
+    #Compute WL
+    wave = fn(freq_trim)
+    if plots == "True":
+        for i in range(preFFT_data.shape[1]):
+            FFT_real = FFT_real_full[:,i]
+            FFT_imag = FFT_imag_full[:,i]
+            FFT_intr = FFT_intr_full[:,i]
+
+            plt.figure(1, dpi=120)
+            plt.plot(freq,FFT_intr.real,label="Real")
+            plt.plot(freq,FFT_intr.imag,label="Imag")
             plt.yscale(scale)
-            plt.title("Corrected FFT")
+            plt.title("Raw FFT")
             plt.xlabel("Freq.")
             plt.legend()
             plt.show()
     
-    return wave, FFT_intr_trim
+            if correct == "True":
+                plt.figure(2, dpi=120)
+                plt.plot(freq,FFT_real,label="Real")
+                plt.plot(freq,FFT_imag,label="Imag")
+                #plt.plot(freq,np.angle(FFT_intr))
+                plt.yscale(scale)
+                plt.title("Corrected FFT")
+                plt.xlabel("Freq.")
+                plt.legend()
+                plt.show()
+        
+    return wave, FFT_intr_trim_full
 
 def import_MAP(path):
     allFiles = []

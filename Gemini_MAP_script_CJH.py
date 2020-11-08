@@ -7,8 +7,9 @@ Created on Sat Oct 24 23:08:58 2020
 from interferogram_functions import FFT_intr, import_MAP, prep_map
 import matplotlib.pyplot as plt
 import numpy as np
-
-path = r"C:\Users\Chuck\Dropbox (UFL)\Hages Lab Files\TRPL Data\Ruiquan\20201104\153345"
+import time
+startTime = time.time()
+path = r"153345"
 pos_data, time_data, map_data = import_MAP(path)
 pos_data = pos_data - 0.03478240614951511    #Taken from shift_factor output in the _INTR analysis script for this data
 
@@ -29,7 +30,7 @@ plt.ylabel('Time / ns')
 plt.xlabel('Position / mm')
 
 preFFT_pos, preFFT_map = prep_map(pos_data,map_data,apodization_width,apod_type=apod_type,resample=resample,resample_factor=resample_factor,shift="False",pad_test=pad_test,padfactor=padfactor,mean_sub=mean_sub,plots="True")
-
+print("Took {} sec".format(time.time() - startTime))
 #trim time-scale data because it is dreadfully slow
 rangeval = [5,25]  #ns
 index = [(np.abs(time_data-np.min(rangeval))).argmin(),(np.abs(time_data-np.max(rangeval))).argmin()]
@@ -37,11 +38,9 @@ preFFT_map = preFFT_map[:,np.min(index):np.max(index)]
 time_data=time_data[np.min(index):np.max(index)]
 
 #Perform FFT
-build_TRES=[]
-for i in range(preFFT_map.shape[1]):
-    wave, FFT_intr_trim = FFT_intr(preFFT_pos,preFFT_map[:,i],plots="False",scale="linear",correct="True")
-    build_TRES.append(FFT_intr_trim)
-build_TRES=np.array(build_TRES,dtype="float").T
+wave, build_TRES = FFT_intr(preFFT_pos, preFFT_map,plots="False",scale="linear",correct="True")
+build_TRES=np.array(build_TRES,dtype="float")
+print("Took {} sec".format(time.time() - startTime))
 
 #Background Subtract
 BKGsub = "False"
