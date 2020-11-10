@@ -105,6 +105,9 @@ def prep_interferogram(pos_data,intr_data,apodization_width,apod_type="BH",mean_
     return preFFT_pos, preFFT_data, shiftfactor
 
 def FFT_intr(preFFT_pos,preFFT_data, plots="False",correct="True",scale="linear"):
+    if preFFT_data.ndim == 1:
+        preFFT_data = preFFT_data.reshape((len(preFFT_data),1))
+    
     #Do as much preparation outside of the loop over preFFT_data's timesteps as possible
     freq = np.fft.rfftfreq(preFFT_pos.shape[-1],np.diff(preFFT_pos)[0])
         

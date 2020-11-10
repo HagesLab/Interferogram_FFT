@@ -22,6 +22,7 @@ def get_calibrated_position_axis(position_axis):
     for names in items:
         if names.endswith("parameters_int.txt"):
             filename = names
+            break
 
     ref = pd.read_csv(filename, sep="\t", header=None)
     first_row = (ref.iloc[0])
