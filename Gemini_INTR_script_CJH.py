@@ -5,7 +5,7 @@ Created on Fri Oct 23 12:20:31 2020
 @author: Chuck
 """
 
-from interferogram_functions import prep_interferogram, import_INTR, FFT_intr, import_MAP
+from interferogram_functions import prep_interferogram, import_INTR, FFT_intr
 import matplotlib.pyplot as plt
 import os
 import numpy as np
@@ -34,8 +34,16 @@ plt.xlim(start_wave,end_wave)
 plt.yscale('linear')
 plt.show()
 
+# Best to turn this on only when you have found the desired params
+save_params = True
 
-
+if save_params:
+    params = {"apod_width":apodization_width, "apod_type":apod_type, "do_resample":resample, "resample_factor":resample_factor,
+              "do_shift":shift, "do_padzeros":pad_test, "pad_factor":padfactor, "do_mean_sub":mean_sub, "shift_factor":shiftfactor}
+    with open(r"{}\INTR_metadata.txt".format(path), 'w+') as ofstream:
+        ofstream.write("# Params used in Gemini_INTR_script_CJH.py")
+        for param, val in params.items():
+            ofstream.write("\n{}:\t{}".format(param, val))
 # =============================================================================
 # #Apply to single line of MAP data
 # pos_data, time_data, map_data = import_MAP(path)
