@@ -11,7 +11,7 @@ import os
 import numpy as np
 
 #Apply to "*_INTR.txt" data
-path = r"\\ad.ufl.edu\che\Hages-Lab\TRPL Data\Hages\Ferekides\20_11_24\152430"
+path = r"20_11_24\152430"
 pos_data, intr_data = import_INTR(path)
 
 apodization_width=1.75

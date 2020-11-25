@@ -104,7 +104,11 @@ def prep_interferogram(pos_data,intr_data,apodization_width,apod_type="BH",mean_
 
     return preFFT_pos, preFFT_data, shiftfactor
 
-def FFT_map(preFFT_pos,preFFT_data, plots="False",correct="True",scale="linear"):
+def FFT_intr(preFFT_pos,preFFT_data, plots="False",correct="True",scale="linear"):
+    # Treat single TS 1D case as 2D case
+    if preFFT_data.ndim == 1:
+        preFFT_data = preFFT_data.reshape((len(preFFT_data),1))
+        
     #Do as much preparation outside of the loop over preFFT_data's timesteps as possible
     freq = np.fft.rfftfreq(preFFT_pos.shape[-1],np.diff(preFFT_pos)[0])
 
@@ -169,63 +173,6 @@ def FFT_map(preFFT_pos,preFFT_data, plots="False",correct="True",scale="linear")
                 plt.show()
 
     return wave, FFT_intr_trim_full
-
-def FFT_intr(preFFT_pos,preFFT_data,plots="False",correct="True",scale="linear"):
-    #Perform FFT
-    FFT_intr = np.fft.rfft(preFFT_data)
-    if correct == "True":
-        #Phase Corrected
-        FFT_real = FFT_intr.real*np.cos(np.angle(FFT_intr))
-        FFT_imag = FFT_intr.imag*np.sin(np.angle(FFT_intr))
-        FFT_final = FFT_real + FFT_imag
-    elif correct == "False":
-        FFT_final = FFT_intr.real + FFT_intr.imag
-    freq = np.fft.rfftfreq(preFFT_pos.shape[-1],np.diff(preFFT_pos)[0])
-
-    #Import calibration for WL
-    items = os.listdir(".")
-    for names in items:
-        if names.endswith("parameters_cal.txt"):
-            filename = names
-    ref = pd.read_csv(filename, sep="\t", header=None)
-    first_row = (ref.iloc[0])
-    second_row = (ref.iloc[1])
-    wavelength = first_row.to_numpy(dtype='float64')
-    reciprocal = second_row.to_numpy(dtype='float64')
-    #Trim FFT data to calibrated WLs
-    FFT_intr_trim=[]
-    freq_trim=[]
-    for i in range(len(FFT_intr)):
-        if freq[i] >= np.min(reciprocal) and freq[i] <= np.max(reciprocal):
-            FFT_intr_trim = np.append(FFT_intr_trim,FFT_final[i])
-            freq_trim = np.append(freq_trim,freq[i])
-    #Compute WL
-    fn = interp1d(reciprocal, wavelength, kind="linear")
-    wave = fn(freq_trim)
-
-    if plots == "True":
-        plt.figure(1, dpi=120)
-        plt.plot(freq,FFT_intr.real,label="Real")
-        plt.plot(freq,FFT_intr.imag,label="Imag")
-        plt.yscale(scale)
-        plt.title("Raw FFT")
-        plt.xlabel("Freq.")
-        plt.legend()
-        plt.show()
-
-        if correct == "True":
-            plt.figure(2, dpi=120)
-            plt.plot(freq,FFT_real,label="Real")
-            plt.plot(freq,FFT_imag,label="Imag")
-            #plt.plot(freq,np.angle(FFT_intr))
-            plt.yscale(scale)
-            plt.title("Corrected FFT")
-            plt.xlabel("Freq.")
-            plt.legend()
-            plt.show()
-
-    return wave, FFT_intr_trim
-
 
 
 def import_MAP(path):

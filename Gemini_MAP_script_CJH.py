@@ -59,7 +59,7 @@ preFFT_pos, preFFT_map = prep_map(pos_data,map_data,apodization_width,apod_type=
 print("Took {} sec".format(time.time() - startTime))
 
 #Perform FFT
-wave, build_TRES = FFT_map(preFFT_pos, preFFT_map,plots="False",scale="linear",correct="True")
+wave, build_TRES = FFT_intr(preFFT_pos, preFFT_map,plots="False",scale="linear",correct="True")
 build_TRES=np.array(build_TRES,dtype="float")
 print("Took {} sec".format(time.time() - startTime))
 
