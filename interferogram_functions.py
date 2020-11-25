@@ -174,7 +174,6 @@ def FFT_intr(preFFT_pos,preFFT_data, plots="False",correct="True",scale="linear"
 
     return wave, FFT_intr_trim_full
 
-
 def import_MAP(path):
     allFiles = []
     b = glob.glob(path + "/*.txt")  # glob. lists the filename and path
@@ -208,7 +207,7 @@ def prep_map(pos_data,map_data,apodization_width,apod_type="BH",mean_sub="True",
     map_data, pos_data = Interf_calibration2D.interf_calibration2D(map_data,pos_data)
     prep_build=[]
     pos_data_raw = pos_data
-
+    
     if mean_sub == "True":
         map_data = map_data - np.mean(map_data, axis=0)
 
@@ -220,7 +219,6 @@ def prep_map(pos_data,map_data,apodization_width,apod_type="BH",mean_sub="True",
     for i in range(map_data.shape[1]): # For each timestep
         intr_data = map_data[:,i] # Take a column
         pos_data = pos_data_raw
-        #pos_data2 = np.add.outer(pos_data_raw, np.zeros(map_data.shape[1]))
 
         index_pos = np.argmin(abs(pos_data))
         if shift == "True":
@@ -238,7 +236,7 @@ def prep_map(pos_data,map_data,apodization_width,apod_type="BH",mean_sub="True",
                 intr_func = np.where(abs(pos_data) <= apodization_width,
                                       A0+A1*np.cos(np.pi*pos_data/apodization_width)+A2*np.cos(2*np.pi*pos_data/apodization_width)+A3*np.cos(3*np.pi*pos_data/apodization_width),
                                       0)
-            if apod_type == "Triangle":
+            if apod_type == "Triangle":                        
                 intr_func = np.where(abs(pos_data) <= apodization_width,
                                       1-abs(pos_data)/apodization_width,
                                       0)

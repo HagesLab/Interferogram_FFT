@@ -15,6 +15,7 @@ startTime = time.time()
 path = r"C:\Users\Chuck\Dropbox (UFL)\UF\TRPL Computer\152430"
 save_data = True
 outputfilename = path + "\\" + os.path.split(path)[-1] + '_TRES.h5'
+
 pos_data, time_data, map_data = import_MAP(path)
 
 #trim time-scale
