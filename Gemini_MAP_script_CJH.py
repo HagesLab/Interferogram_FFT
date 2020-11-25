@@ -4,19 +4,43 @@ Created on Sat Oct 24 23:08:58 2020
 
 @author: Chuck
 """
-from interferogram_functions import FFT_map, import_MAP, prep_map
+from interferogram_functions import FFT_intr, import_MAP, prep_map
 import matplotlib.pyplot as plt
 import numpy as np
 import time
 import h5py
 import os
 
+def fetch_metadata(dir_name):
+    with open("{}\\INTR_metadata.txt".format(dir_name), "r") as ifstream:
+        param_values_dict = {}
+        for line in ifstream:
+            if "#" in line: continue
+
+            else:
+                param = line[0:line.find(':')]
+                new_value = line[line.find('\t') + 1:].strip('\n')
+
+                try:
+                    if "." in new_value:
+                        param_values_dict[param] = float(new_value)
+                    else:
+                        param_values_dict[param] = int(new_value)
+                except:
+                    param_values_dict[param] = str(new_value)
+                
+    return param_values_dict
+
 startTime = time.time()
-path = r"C:\Users\Chuck\Dropbox (UFL)\UF\TRPL Computer\152430"
+path = r"20_11_24\152430"
+params_from_INTR_metadata = True
 save_data = True
 outputfilename = path + "\\" + os.path.split(path)[-1] + '_TRES.h5'
-
 pos_data, time_data, map_data = import_MAP(path)
+
+# Auto read params from INTR
+if params_from_INTR_metadata:
+    params = fetch_metadata(path)
 
 #trim time-scale
 rangeval = [0,100]  #ns
@@ -25,7 +49,8 @@ map_data = map_data[:,np.min(index):np.max(index)]
 time_data=time_data[np.min(index):np.max(index)]
 
 #Manual Shift of Peak
-pos_data = pos_data - 0.15619633484742135    #Taken from shift_factor output in the _INTR analysis script for this data
+shift_factor = params['shift_factor'] if params_from_INTR_metadata else 0.15619633484742135
+pos_data = pos_data - shift_factor    #Taken from shift_factor output in the _INTR analysis script for this data
 
 #Background Subtract TRPL Curves
 BKGsub = "True"
@@ -34,17 +59,28 @@ BKGrange = [0,5]  #ns
 if BKGsub == "True":
     index = [(np.abs(time_data-np.min(BKGrange))).argmin(),(np.abs(time_data-np.max(BKGrange))).argmin()]
     BKGval = np.mean(map_data[:,np.min(index):np.max(index)],axis=1)
-    for i in range(len(BKGval)):
-        map_data[i,:] = map_data[i,:]-BKGval[i]
 
-apodization_width=1.75
-apod_type="BH"    # "None" "Gauss" "Triangle" "Boxcar" "BH"
-resample="True"
-resample_factor=4
-shift="True"
-pad_test="True"
-padfactor=4
-mean_sub = "True"
+    map_data = map_data - np.reshape(BKGval, (len(BKGval), 1))
+    
+if params_from_INTR_metadata:
+    apodization_width = params['apod_width']
+    apod_type = params['apod_type']
+    resample = params['do_resample']
+    resample_factor = params['resample_factor']
+    shift = params["do_shift"]
+    pad_test = params['do_padzeros']
+    padfactor = params['pad_factor']
+    mean_sub = params['do_mean_sub']
+    
+else:    
+    apodization_width=1.75
+    apod_type="BH"    # "None" "Gauss" "Triangle" "Boxcar" "BH"
+    resample="True"
+    resample_factor=4
+    shift="True"
+    pad_test="True"
+    padfactor=4
+    mean_sub = "True"
 
 # =============================================================================
 # #Plot Raw Data (Background Subtracted and Shifted)
