@@ -11,7 +11,7 @@ import os
 import numpy as np
 
 #Apply to "*_INTR.txt" data
-path = r"20_11_24\152430"
+path = r"20_11_24\182927"
 pos_data, intr_data = import_INTR(path)
 
 apodization_width=1.75
@@ -35,7 +35,7 @@ plt.yscale('linear')
 plt.show()
 
 # Best to turn this on only when you have found the desired params
-save_params = True
+save_params = False
 
 if save_params:
     params = {"apod_width":apodization_width, "apod_type":apod_type, "do_resample":resample, "resample_factor":resample_factor,

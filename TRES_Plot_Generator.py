@@ -10,8 +10,9 @@ import os
 from matplotlib import ticker
 import h5py
 
-path = r"C:\Users\Chuck\Dropbox (UFL)\UF\TRPL Computer\152430"
+path = r"20_11_24\152430"
 importfilename = path + "\\" + os.path.split(path)[-1] + '_TRES.h5'
+export = False
 
 hf = h5py.File(importfilename, 'r')
 TRES = np.array(hf.get('TRES Data'))
@@ -30,9 +31,9 @@ AverageTRPL = True
 rangeval = [800,875]  #nm
 if AverageTRPL:
     index = [(np.abs(wave-np.min(rangeval))).argmin(),(np.abs(wave-np.max(rangeval))).argmin()]
-    TRPLdata = np.mean(TRES[np.min(index):np.max(index),:],axis=0)
+    TRPLdata = np.sum(TRES[np.min(index):np.max(index),:],axis=0)
 else:
-    TRPLdata = np.mean(TRES,axis=0)
+    TRPLdata = np.sum(TRES,axis=0)
 
 BKG_TRPL = True
 BKGrange = [0,5]  #ns
@@ -44,19 +45,21 @@ AveragePL = False
 rangeval = [np.max(np.mean(TRES,axis=0)),25]  #ns
 if AveragePL:
     index = [(np.abs(time_data-np.min(rangeval))).argmin(),(np.abs(time_data-np.max(rangeval))).argmin()]
-    PLdata = np.mean(TRES[:,np.min(index):np.max(index)],axis=1)
+    PLdata = np.sum(TRES[:,np.min(index):np.max(index)],axis=1)
 else:
-    PLdata = np.mean(TRES,axis=1)
+    PLdata = np.sum(TRES,axis=1)
 
 fig = plt.figure(0,dpi=120)
-grid = plt.GridSpec(2, 2, height_ratios=[3, 1],width_ratios=[1,3],wspace=0.05,hspace=0.05)
+grid = plt.GridSpec(2, 3, height_ratios=[3, 1],width_ratios=[1,2,0.44],wspace=0.05,hspace=0.05)
 
 main_ax = fig.add_subplot(grid[:-1, 1:])
 main_ax.set_xlim(wave_range)
 main_ax.set_ylim(time_range)
-main_ax.contourf(wavemesh,timemesh,np.log(TRES),100,vmin=0,cmap='plasma')  
+#cs = main_ax.contourf(wavemesh,timemesh,np.log(TRES),100,vmin=0, cmap='plasma')  
+cs = main_ax.contourf(wavemesh,timemesh,TRES,60,locator=ticker.LogLocator(),cmap='plasma')  
 main_ax.tick_params(bottom='off')
 main_ax.label_outer()
+plt.colorbar(cs, ax=main_ax)
 
 TRPL = fig.add_subplot(grid[:-1, 0], xticklabels=[],sharey=main_ax)
 TRPL.invert_xaxis()
@@ -65,6 +68,13 @@ TRPL.set_xlim(2*np.max(TRPLdata),np.max(TRPLdata)*TRPLmin_OM)
 TRPL.plot(TRPLdata,time_data)
 TRPL.set(ylabel='Time / ns')
 
-PL = fig.add_subplot(grid[-1, 1:], yticklabels=[], sharex=main_ax)
+PL = fig.add_subplot(grid[-1, 1], yticklabels=[], sharex=main_ax)
 PL.plot(wave,PLdata)
 PL.set(xlabel='Wavelength / nm')
+
+if export:
+    if not os.path.isdir("Exports"):
+        os.mkdir("Exports")
+    np.savetxt(r"Exports\{}_AverageTRPL.csv".format(os.path.split(path)[-1]), TRPLdata)
+    np.savetxt(r"Exports\{}_AveragePL.csv".format(os.path.split(path)[-1]), PLdata)
+    
