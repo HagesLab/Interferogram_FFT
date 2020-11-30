@@ -10,7 +10,7 @@ import os
 from matplotlib import ticker
 import h5py
 
-path = r"20_11_24\152430"
+path = r"C:\Users\Chuck\Desktop\20_11_24\173735"
 importfilename = path + "\\" + os.path.split(path)[-1] + '_TRES.h5'
 export = False
 
@@ -23,7 +23,7 @@ hf.close()
 timemesh, wavemesh = np.meshgrid(time_data,wave)
 wave_range =  [700 , 950]
 time_range = [0,40]
-TRPLmin_OM = 1e-4
+TRPLmin_OM = 1e-3
 
 #TimeShit to Peak - use this for BKG sub
 
@@ -36,7 +36,7 @@ else:
     TRPLdata = np.sum(TRES,axis=0)
 
 BKG_TRPL = True
-BKGrange = [0,5]  #ns
+BKGrange = [0,4.5]  #ns
 if BKG_TRPL:
     index = [(np.abs(time_data-np.min(BKGrange))).argmin(),(np.abs(time_data-np.max(BKGrange))).argmin()]
     TRPLdata = TRPLdata-np.mean(TRPLdata[np.min(index):np.max(index)])
@@ -56,7 +56,7 @@ main_ax = fig.add_subplot(grid[:-1, 1:])
 main_ax.set_xlim(wave_range)
 main_ax.set_ylim(time_range)
 #cs = main_ax.contourf(wavemesh,timemesh,np.log(TRES),100,vmin=0, cmap='plasma')  
-cs = main_ax.contourf(wavemesh,timemesh,TRES,60,locator=ticker.LogLocator(),cmap='plasma')  
+cs = main_ax.contourf(wavemesh,timemesh,TRES,60,locator=ticker.LogLocator(),vmin=1e1,cmap='plasma')  
 main_ax.tick_params(bottom='off')
 main_ax.label_outer()
 plt.colorbar(cs, ax=main_ax)
