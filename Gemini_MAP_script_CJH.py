@@ -12,7 +12,7 @@ import h5py
 import os
 
 def fetch_metadata(dir_name):
-    with open("{}\\INTR_metadata.txt".format(dir_name), "r") as ifstream:
+    with open("{}\\Param_Import_metadata.txt".format(dir_name), "r") as ifstream:
         param_values_dict = {}
         for line in ifstream:
             if "#" in line: continue
@@ -32,7 +32,7 @@ def fetch_metadata(dir_name):
     return param_values_dict
 
 startTime = time.time()
-path = r"20_11_24\152430"
+path = r"C:\Users\Chuck\Desktop\20_11_24\173735"
 params_from_INTR_metadata = True
 save_data = True
 outputfilename = path + "\\" + os.path.split(path)[-1] + '_TRES.h5'
@@ -53,10 +53,10 @@ shift_factor = params['shift_factor'] if params_from_INTR_metadata else 0.156196
 pos_data = pos_data - shift_factor    #Taken from shift_factor output in the _INTR analysis script for this data
 
 #Background Subtract TRPL Curves
-BKGsub = "True"
-BKGrange = [0,5]  #ns
+BKGsub = True
+BKGrange = [0,4.5]  #ns
 
-if BKGsub == "True":
+if BKGsub:
     index = [(np.abs(time_data-np.min(BKGrange))).argmin(),(np.abs(time_data-np.max(BKGrange))).argmin()]
     BKGval = np.mean(map_data[:,np.min(index):np.max(index)],axis=1)
 
