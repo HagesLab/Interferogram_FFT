@@ -32,7 +32,7 @@ def fetch_metadata(dir_name):
     return param_values_dict
 
 startTime = time.time()
-path = r"C:\Users\Chuck\Desktop\20_11_24\173735"
+path = r"20_12_1\183420"
 params_from_INTR_metadata = True
 save_data = True
 outputfilename = path + "\\" + os.path.split(path)[-1] + '_TRES.h5'
@@ -53,8 +53,13 @@ shift_factor = params['shift_factor'] if params_from_INTR_metadata else 0.156196
 pos_data = pos_data - shift_factor    #Taken from shift_factor output in the _INTR analysis script for this data
 
 #Background Subtract TRPL Curves
-BKGsub = True
-BKGrange = [0,4.5]  #ns
+if params_from_INTR_metadata:
+    BKGsub = (params['do_BKG_sub'] == "True")
+    BKGrange = [float(params['BKG_l']), float(params['BKG_r'])]
+    
+else:
+    BKGsub = True
+    BKGrange = [0,4.5]  #ns
 
 if BKGsub:
     index = [(np.abs(time_data-np.min(BKGrange))).argmin(),(np.abs(time_data-np.max(BKGrange))).argmin()]

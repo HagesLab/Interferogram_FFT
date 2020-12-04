@@ -10,9 +10,9 @@ import os
 from matplotlib import ticker
 import h5py
 
-path = r"C:\Users\Chuck\Desktop\20_11_24\173735"
+path = r"20_12_1\161903"
 importfilename = path + "\\" + os.path.split(path)[-1] + '_TRES.h5'
-export = False
+export = True
 
 hf = h5py.File(importfilename, 'r')
 TRES = np.array(hf.get('TRES Data'))
@@ -36,45 +36,57 @@ else:
     TRPLdata = np.sum(TRES,axis=0)
 
 BKG_TRPL = True
-BKGrange = [0,4.5]  #ns
+BKGrange = [0,4.6]  #ns
 if BKG_TRPL:
     index = [(np.abs(time_data-np.min(BKGrange))).argmin(),(np.abs(time_data-np.max(BKGrange))).argmin()]
     TRPLdata = TRPLdata-np.mean(TRPLdata[np.min(index):np.max(index)])
 
 AveragePL = False
-rangeval = [np.max(np.mean(TRES,axis=0)),25]  #ns
+t_rangeval = [np.max(np.mean(TRES,axis=0)),25]  #ns
 if AveragePL:
-    index = [(np.abs(time_data-np.min(rangeval))).argmin(),(np.abs(time_data-np.max(rangeval))).argmin()]
+    index = [(np.abs(time_data-np.min(t_rangeval))).argmin(),(np.abs(time_data-np.max(t_rangeval))).argmin()]
     PLdata = np.sum(TRES[:,np.min(index):np.max(index)],axis=1)
 else:
     PLdata = np.sum(TRES,axis=1)
 
 fig = plt.figure(0,dpi=120)
-grid = plt.GridSpec(2, 3, height_ratios=[3, 1],width_ratios=[1,2,0.44],wspace=0.05,hspace=0.05)
+grid = plt.GridSpec(2, 3, height_ratios=[3, 1],width_ratios=[1.5,2,0.43],wspace=0.05,hspace=0.05)
 
 main_ax = fig.add_subplot(grid[:-1, 1:])
+main_ax.set_title(path)
 main_ax.set_xlim(wave_range)
 main_ax.set_ylim(time_range)
-#cs = main_ax.contourf(wavemesh,timemesh,np.log(TRES),100,vmin=0, cmap='plasma')  
-cs = main_ax.contourf(wavemesh,timemesh,TRES,60,locator=ticker.LogLocator(),vmin=1e1,cmap='plasma')  
+#cs = main_ax.contourf(wavemesh,timemesh,np.log10(TRES),60,vmin=1, cmap='plasma')  
+#cs = main_ax.contourf(wavemesh,timemesh,TRES,locator=ticker.LogLocator(base=10, numticks=30),vmin=1e1,cmap='plasma')  
+
+# Instructive Matplotlib moment here:
+import matplotlib.colors as mc
+# This tells the colorbar how to distribute its colors - by default it's a linear scale, which, if your data is log scale,
+# will assign one color to the highest order of magnitude datapoint and a second color to everything else
+# Uncomment the BoundaryNorm, which is a linear scale, and comment out the LogNorm to see what I mean
+#norm = mc.BoundaryNorm(np.geomspace(1e1, 1e6, 41), ncolors=41)
+norm = mc.LogNorm(1.5e1, 1e4)
+
+# Levels control how many different color shades there are: more levels = smoother gradient
+cs = main_ax.contourf(wavemesh,timemesh,TRES,levels=np.geomspace(1e1, 1e4, 41),norm=norm ,cmap='plasma', extend='min')  
 main_ax.tick_params(bottom='off')
 main_ax.label_outer()
-plt.colorbar(cs, ax=main_ax)
+# ticks control what axis values are physically written on the colorbar
+cbar = plt.colorbar(cs, ax=main_ax, ticks=np.geomspace(1e1, 1e5, 5))
 
 TRPL = fig.add_subplot(grid[:-1, 0], xticklabels=[],sharey=main_ax)
 TRPL.invert_xaxis()
 TRPL.set_xscale('log')
-TRPL.set_xlim(2*np.max(TRPLdata),np.max(TRPLdata)*TRPLmin_OM)
+TRPL.set_xlim(2*np.max(TRPLdata),1.5e2)
 TRPL.plot(TRPLdata,time_data)
-TRPL.set(ylabel='Time / ns')
+TRPL.set(ylabel='Time / ns', xlabel="TRPL")
 
 PL = fig.add_subplot(grid[-1, 1], yticklabels=[], sharex=main_ax)
 PL.plot(wave,PLdata)
 PL.set(xlabel='Wavelength / nm')
 
 if export:
-    if not os.path.isdir("Exports"):
-        os.mkdir("Exports")
-    np.savetxt(r"Exports\{}_AverageTRPL.csv".format(os.path.split(path)[-1]), TRPLdata)
-    np.savetxt(r"Exports\{}_AveragePL.csv".format(os.path.split(path)[-1]), PLdata)
+    fig.savefig(r"{}\{}py.png".format(path, os.path.split(path)[-1]))
+    np.savetxt(r"{}\{}_AverageTRPL_{}_to_{}nm.csv".format(path, os.path.split(path)[-1], *rangeval), TRPLdata)
+    np.savetxt(r"{}\{}_AveragePL_{}_to_{}ns.csv".format(path, os.path.split(path)[-1], *t_rangeval), PLdata)
     
