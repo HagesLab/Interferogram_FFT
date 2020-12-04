@@ -10,7 +10,7 @@ import os
 from matplotlib import ticker
 import h5py
 
-path = r"20_12_1\161903"
+path = r"20_12_1\183420"
 importfilename = path + "\\" + os.path.split(path)[-1] + '_TRES.h5'
 export = True
 
@@ -87,6 +87,13 @@ PL.set(xlabel='Wavelength / nm')
 
 if export:
     fig.savefig(r"{}\{}py.png".format(path, os.path.split(path)[-1]))
-    np.savetxt(r"{}\{}_AverageTRPL_{}_to_{}nm.csv".format(path, os.path.split(path)[-1], *rangeval), np.vstack((time_data,TRPLdata)).T, delimiter=',')
-    np.savetxt(r"{}\{}_AveragePL_{}_to_{}ns.csv".format(path, os.path.split(path)[-1], *t_rangeval), np.vstack((wave,PLdata)).T, delimiter=',')
+    if AverageTRPL:
+        np.savetxt(r"{}\{}_AverageTRPL_{}_to_{}nm.csv".format(path, os.path.split(path)[-1], *rangeval), np.vstack((time_data,TRPLdata)).T, delimiter=',')
+    else:
+        np.savetxt(r"{}\{}_AverageTRPL.csv".format(path, os.path.split(path)[-1]), np.vstack((time_data,TRPLdata)).T, delimiter=',')
+    
+    if AveragePL:
+        np.savetxt(r"{}\{}_AveragePL_{}_to_{}ns.csv".format(path, os.path.split(path)[-1], *t_rangeval), np.vstack((wave,PLdata)).T, delimiter=',')
+    else:
+        np.savetxt(r"{}\{}_AveragePL.csv".format(path, os.path.split(path)[-1]), np.vstack((wave,PLdata)).T, delimiter=',')
     
