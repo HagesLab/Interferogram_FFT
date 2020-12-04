@@ -87,6 +87,6 @@ PL.set(xlabel='Wavelength / nm')
 
 if export:
     fig.savefig(r"{}\{}py.png".format(path, os.path.split(path)[-1]))
-    np.savetxt(r"{}\{}_AverageTRPL_{}_to_{}nm.csv".format(path, os.path.split(path)[-1], *rangeval), TRPLdata)
-    np.savetxt(r"{}\{}_AveragePL_{}_to_{}ns.csv".format(path, os.path.split(path)[-1], *t_rangeval), PLdata)
+    np.savetxt(r"{}\{}_AverageTRPL_{}_to_{}nm.csv".format(path, os.path.split(path)[-1], *rangeval), np.vstack((time_data,TRPLdata)).T, delimiter=',')
+    np.savetxt(r"{}\{}_AveragePL_{}_to_{}ns.csv".format(path, os.path.split(path)[-1], *t_rangeval), np.vstack((wave,PLdata)).T, delimiter=',')
     
