@@ -9,29 +9,31 @@ from interferogram_functions import prep_interferogram, FFT_intr, import_MAP
 import matplotlib.pyplot as plt
 import numpy as np
 
-path = r"C:\Users\c.hages\Dropbox (UFL)\UF\TRPL Computer\Aaron\144620"
-BKGsub = True
-save_params = True
-start_wave = 550
-end_wave = 1050
-pltzoomstate = False
+path = r"C:\Users\Chuck\Dropbox (UFL)\UF\TRPL Computer\Calvin\142824"  
+BKGsub = True               #Background Subtract - Generally True
+bkg_limit = -5              #ns before the TRPL peak to average the background data up to - see plot
+save_params = True          #Use this to create a txt file that can be imported into the "..._MAP_script"
+start_wave = 1000           #For Plotting
+end_wave = 1700             #For Plotting
+pltzoomstate = False        #Zoom in around the zero position in interferogram to better observe oscillations
 
-apodization_width=0.5
-apod_type="BH"    # "None" "Gauss" "Triangle" "Boxcar" "BH"
-resample="True"
-resample_factor=4
-shift="True"
-pad_test="True"
-padfactor=4
-mean_sub = "True"
+apodization_width=0.95      #Bounds (negative to positive) outside of which the data = 0
+apod_type="BH"              #Function to use for apodization: "None" "Gauss" "Triangle" "Boxcar" or "BH" (Default)
+resample="True"             #Enhance resolution by cubic interpolation
+resample_factor=4           #Factor to increase data points by
+shift="False"               #Shift max value to be at 0 mm position - not sure it matters
+pad_test="True"             #Pad the data with zeros to enhance FFT resolution
+padfactor = 15              #Total points will be filled with zeros untill 2**padfactor  -> 2**15 = 32k (default), 2**16=65k 
+mean_sub = "True"           #Shift the average value of the interferogram to be zero
 
+TRPLmin_OM = 1e-7           #How many orders of magnitude to plot down in y-scale for TRPL curve
 
 pos_data, time_data, map_data = import_MAP(path)
 
 #Background Subtract
 t_max = time_data[np.array(np.where(np.mean(map_data,axis=0)==np.max(np.mean(map_data,axis=0)))[0],dtype="int")]
 time_data=time_data-t_max
-BKGrange = np.array([time_data[0],-2],dtype='float')  #ns
+BKGrange = np.array([time_data[0],bkg_limit],dtype='float')  #ns
 if BKGsub:
     index = [(np.abs(time_data-np.min(BKGrange))).argmin(),(np.abs(time_data-np.max(BKGrange))).argmin()]
     BKGval = np.mean(map_data[:,np.min(index):np.max(index)],axis=1)
@@ -56,7 +58,6 @@ preFFT_pos, preFFT_data, shiftfactor = prep_interferogram(pos_data,AVG_map_data,
 wave, FFT_intr_trim = FFT_intr(preFFT_pos,preFFT_data,plots="True",scale="linear",correct="True")
 
 #Plot Full TRPL
-TRPLmin_OM = 1e-4
 plt.figure(4, dpi=120)
 integralTRPL = np.sum(map_data,axis=0)
 plt.figure(3, dpi=120)
@@ -78,8 +79,6 @@ plt.yscale('linear')
 plt.show()
 
 # Best to turn this on only when you have found the desired params
-
-
 if save_params:
     params = {"apod_width":apodization_width, "apod_type":apod_type, "do_resample":resample, "resample_factor":resample_factor,
               "do_shift":shift, "do_padzeros":pad_test, "pad_factor":padfactor, "do_mean_sub":mean_sub, "shift_factor":shiftfactor,"background_subtract":BKGsub,"background_range_low":BKGrange[0], "background_range_high":BKGrange[1]}

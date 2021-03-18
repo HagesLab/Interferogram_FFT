@@ -14,38 +14,38 @@ import matplotlib.colors
 from matplotlib.ticker import LogLocator
 from scipy import ndimage
 import ast
+from scipy.optimize import curve_fit
 
 
-path = r"C:\Users\c.hages\Dropbox (UFL)\UF\TRPL Computer\Aaron\144620"
-params_from_INTR_metadata = True
-save_data = True
-ImportTRES = True
-TRES_param_override = False
-
-
-# =============================================================================
-# If not importing params from metadata:
-# =============================================================================
-manual_shift_factor = 0.005837467299965371
-save_params = False
+path = r"C:\Users\Chuck\Dropbox (UFL)\UF\TRPL Computer\Calvin\142824"
+params_from_INTR_metadata = True        #Import metadata from "...Averaged_MAP..." script - if not using this there may be bugs
+save_data = True                        #Save all plots and TRES data
+ImportTRES = True                       #Use this to prevent recalcualting the FFT - must have "..TRES.h5" already savded
+TRES_param_override = False             #Bugs in this feature! Don't recomend using at this point (add fitting and bkgsub info)
 
 # =============================================================================
 # If not importing TRES data
 # =============================================================================
-#trim time-scale
-rangeval = 1500  #ns
+#trim time-scale to have a smaller data set
+rangeval = 20  #ns
 #Plot Interferogram? (Background Subtracted and Shifted)
-intfPlot = True
-intrfxlims = "Full"
+intfPlot = False
+intrfxlims = "Full"   #if == "Full" no restriction, full data. Otherwise define range
 #intrfxlims = [-0.25,0.25]
+
+# =============================================================================
+# If not importing params from metadata:
+# =============================================================================
+manual_shift_factor = 0.005837467299965371       #Hard to compute shift on time-resolved data at each time, do it manually
+save_params = False                              #Save new metadata to be able to import
 
 # =============================================================================
 # Plotting Metadata
 # =============================================================================
 
 #All Plots
-timeRange = [-0.75,25]
-PLRange = [600.,950.]
+timeRange = [-2,15]
+PLRange = [950.,1700.]
 
 #TRES
 min_value = 32
@@ -54,21 +54,26 @@ sigmaval = 2   #For Gauss Filter
 
 #PL Plot
 AveragePL = False
-rangevalPL = [[0,1],[5,30]]  #ns
+rangevalPL = [[0,10],[30,60]]  #ns
 NormPL = True
 
 #TRPL Plot
 Usemapdata=True
-AverageTRPL = True                              #Only if not using mapdata
-rangevalTRPL = [[600.,800.]]  #nm    #Only if not using mapdata
-NormTRPL = False
+AverageTRPL = True                     #Only if not using mapdata
+rangevalTRPL = [[1100.,1400.]]  #nm    #Only if not using mapdata
+NormTRPL = True
 BKGTRPL = True
-TRPLmin_OM = 1e-4
+TRPLmin_OM = 1e-7
 overrideTRPLrange = False    #For standalone TRPL plot
 overidexrange = [-10,1000]    #Only if overriding range
 
+#Fitting TRPL
+FitTRPL = True
+fit_range = [[2,7.5]]   #List length must match the number of TRPL curves (line 64) / if mapdata then length 1
+fit_on_TRES = True
+
 #Composite TRES
-composite_legend = False
+composite_legend = True
 
 
 # =============================================================================
@@ -142,10 +147,10 @@ else:
         resample_factor=4
         shift="False"
         pad_test="True"
-        padfactor=4
+        padfactor=15
         mean_sub = "True"
-        BKGsub = "True"
-        BKGrange = [0,12]  #ns  Before t_max
+        BKGsub = True
+        bkg_limit = -5  #ns  Before t_max
         shift_factor = manual_shift_factor
 
 if save_params:
@@ -184,10 +189,12 @@ else:
     pos_data = pos_data - shift_factor    #Taken from shift_factor output in the _INTR analysis script for this data
 
    #Background Subtract TRPL Curves
+    BKGrange = np.array([time_data[0],bkg_limit],dtype='float')  #ns
     if BKGsub:
         index = [(np.abs(time_data-np.min(BKGrange))).argmin(),(np.abs(time_data-np.max(BKGrange))).argmin()]
         BKGval = np.mean(map_data[:,np.min(index):np.max(index)],axis=1)
         map_data = map_data - np.reshape(BKGval, (len(BKGval), 1))
+        
 
     #trim time-scale
     index = (np.abs(time_data-np.max(rangeval))).argmin()
@@ -236,7 +243,6 @@ cbar.ax.yaxis.set_major_locator(LogLocator())
 cbar.set_ticks(cbar.ax.yaxis.get_major_locator().tick_values(TRESplot.min(), TRESplot.max()))
 ax.set_ylabel('Time / ns')
 ax.set_xlabel('Wavelength / nm')
-plt.show()
 
 #Plot averged PL over given range
 if AveragePL:
@@ -263,6 +269,9 @@ if AveragePL:
     plt.legend()
 else:
     plt.plot(wave,plot_TRES)
+if save_data:
+    PLname = path + "\\" + os.path.split(path)[-1] + '_PLPlot.png'
+    plt.savefig(PLname)
 
 
 #Plot integral TRPL decay over given range
@@ -306,13 +315,71 @@ if overrideTRPLrange:
     plt.xlim(min(overidexrange),max(overidexrange))
 if AverageTRPL:
     for i in range(len(integralTRPL)):
-        plt.plot(time_data,integralTRPL[i],label=str(min(rangevalTRPL[i])) + " to " + str(max(rangevalTRPL[i])) + " nm")
-    plt.legend()
+        plt.plot(time_data,integralTRPL[i],label=str(min(np.array(rangevalTRPL[i],dtype='int16'))) + " to " + str(max(np.array(rangevalTRPL[i],dtype='int16'))) + " nm")
+        plt.legend()
 else:
     plt.plot(time_data,integralTRPL)
+if save_data:
+    TRPLname = path + "\\" + os.path.split(path)[-1] + '_TRPLPlot.png'
+    plt.savefig(TRPLname)
+
+#Fit TRPL
+def Fit_1exp(TRPL_data,time_data,fitrange):
+
+    def Exp1(time,A,tau):
+        return -time/tau + np.log(A)
+
+    #trim-data
+    low_index, high_index = (np.abs(time_data-np.min(fitrange))).argmin() , (np.abs(time_data-np.max(fitrange))).argmin()
+    TRPL_fit = TRPL_data[low_index:high_index]
+    time_fit = time_data[low_index:high_index]
+
+    popt, pcov = curve_fit(Exp1,time_fit,np.log(np.abs(TRPL_fit)))
+    perr = np.sqrt(np.diag(pcov))
+
+    TRPL_out = np.exp(Exp1(time_fit,*popt))
+    label =  r'$\tau:\ $' + np.array2string(popt[1], precision=2, separator=',', suppress_small=True) + ' ns'
+
+    return TRPL_out, time_fit, label, popt, perr
+
+if FitTRPL:
+    if AverageTRPL:
+        TRPL_fit_list, time_fit_list, fit_label_list = [],[],[]
+        for i in range(len(integralTRPL)):
+            TRPL_fit, time_fit, fit_label, popt, perr = Fit_1exp(integralTRPL[i],time_data,fit_range[i])
+            TRPL_fit = list(TRPL_fit)
+            time_fit = list(time_fit)
+            fit_label = list(fit_label)
+            TRPL_fit_list.append(TRPL_fit)
+            time_fit_list.append(time_fit)
+            fit_label_list.append(fit_label)
+    else:
+        TRPL_fit, time_fit, fit_label, popt, perr = Fit_1exp(integralTRPL,time_data,fit_range[0])
+       
+if FitTRPL:
+    plt.figure(5, dpi=120)
+    plt.title("Integral TRPL")
+    plt.xlabel('Time / ns')
+    plt.ylabel('Counts / a.u.')
+    plt.yscale('log')
+    plt.ylim(np.max(integralTRPL)*TRPLmin_OM,2*np.max(integralTRPL))
+    plt.xlim(min(timeRange),max(timeRange))
+    if overrideTRPLrange:
+        plt.xlim(min(overidexrange),max(overidexrange))
+    if AverageTRPL:
+        for i in range(len(integralTRPL)):
+            plt.plot(time_data,integralTRPL[i],label=str(min(np.array(rangevalTRPL[i],dtype='int16'))) + " to " + str(max(np.array(rangevalTRPL[i],dtype='int16'))) + " nm")
+            plt.plot(np.array(time_fit_list[i]),np.array(TRPL_fit_list[i]),'k--',label = ''.join(fit_label_list[i]))
+    else:
+        plt.plot(time_data,integralTRPL)
+        plt.plot(time_fit,TRPL_fit,'k--',label = fit_label)
+    plt.legend()    
+    if save_data:
+        TRPLFitname = path + "\\" + os.path.split(path)[-1] + '_TRPLFitPlot.png'
+        plt.savefig(TRPLFitname)
 
 #Composite TRES
-fig = plt.figure(5,dpi=120)
+fig = plt.figure(6,dpi=120)
 grid = plt.GridSpec(2, 3, height_ratios=[1, 1/3],width_ratios=[0.8,2,0.44],wspace=0.05,hspace=0.05)
 
 main_ax = fig.add_subplot(grid[:-1, 1:])
@@ -332,11 +399,20 @@ TRPL = fig.add_subplot(grid[:-1, 0], xticklabels=[],sharey=main_ax)
 TRPL.invert_xaxis()
 TRPL.set_xscale('log')
 TRPL.set_xlim(2*np.max(integralTRPL),np.max(integralTRPL)*TRPLmin_OM)
-if AverageTRPL:
-    for i in range(len(integralTRPL)):
-        TRPL.plot(integralTRPL[i],time_data,label=str(min(rangevalTRPL[i])) + " to " + str(max(rangevalTRPL[i])) + " nm")
+if fit_on_TRES and FitTRPL:
+    if AverageTRPL:
+        for i in range(len(integralTRPL)):
+            TRPL.plot(integralTRPL[i],time_data,label=str(min(np.array(rangevalTRPL[i],dtype='int16'))) + " to " + str(max(np.array(rangevalTRPL[i],dtype='int16'))) + " nm")
+            TRPL.plot(np.array(TRPL_fit_list[i]),np.array(time_fit_list[i]),'k--',label = ''.join(fit_label_list[i]))
+    else:
+        TRPL.plot(integralTRPL,time_data)
+        TRPL.plot(TRPL_fit,time_fit,'k--',label = fit_label)
 else:
-    TRPL.plot(integralTRPL,time_data)
+    if AverageTRPL:
+        for i in range(len(integralTRPL)):
+            TRPL.plot(integralTRPL[i],time_data,label=str(min(rangevalTRPL[i])) + " to " + str(max(rangevalTRPL[i])) + " nm")
+    else:
+        TRPL.plot(integralTRPL,time_data)
 TRPL.set(ylabel='Time / ns')
 
 PL = fig.add_subplot(grid[-1, 1], yticklabels=[], sharex=main_ax)
@@ -348,6 +424,9 @@ else:
 PL.set(xlabel='Wavelength / nm')
 if composite_legend:
     fig.legend(loc='lower left', bbox_to_anchor=(0, 0.1))
+if save_data:
+    TRESname = path + "\\" + os.path.split(path)[-1] + '_TRESPlot.png'
+    plt.savefig(TRESname)
 
 #Write 2D Data Set
 if save_data:
@@ -363,3 +442,4 @@ if save_data:
     if AverageTRPL:
         hf.create_dataset('TRPL Metadata', data=rangevalTRPL)
     hf.close()
+    

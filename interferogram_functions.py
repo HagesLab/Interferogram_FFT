@@ -77,9 +77,10 @@ def prep_interferogram(pos_data,intr_data,apodization_width,apod_type="BH",mean_
         intr_data = intr_data*intr_func
     posdiff=np.diff(pos_data)[0]
     if pad_test == "True":
-        padlen = int(padfactor*(2**np.ceil(np.log(len(intr_data))/np.log(2))))-len(intr_data)
-        intr_data = np.pad(intr_data,(0,int(padlen)),'constant', constant_values=(0))
-        pos_data = np.append(pos_data,np.linspace(pos_data[-1]+posdiff,(pos_data[-1]+posdiff)+padlen*posdiff,num=padlen))
+        padlen = 2**padfactor-len(intr_data)
+        if padlen >0:
+            intr_data = np.pad(intr_data,(0,int(padlen)),'constant', constant_values=(0))
+            pos_data = np.append(pos_data,np.linspace(pos_data[-1]+posdiff,(pos_data[-1]+posdiff)+padlen*posdiff,num=padlen))
 
     left_axis_intr, right_axis_intr = intr_data[0:index_pos+1], intr_data[index_pos+1:]
     left_axis_pos, right_axis_pos = pos_data[0:index_pos+1], pos_data[index_pos+1:]
