@@ -19,7 +19,7 @@ Recomended Procedure for TRPL MAP data:
           
           - Plot 3 -> Observe the data prep. Should be reflected around peak and padded with desired zeros in the middle.
           
-          <img scr="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/Pad.png" width="350">
+          <img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/Pad.png" width="350">
           
           - Plot 4 & 5 -> Will show the Raw and Phase-Corrected FFT data
           
