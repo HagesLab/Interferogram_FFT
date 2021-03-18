@@ -13,19 +13,18 @@ Recomended Procedure for TRPL MAP data:
 * Pick the appropriate wavelength range for your data, based on the detector used (Vis = 400-1000; NIR = 950-1700).
 * Pick appropraite FFT paramters for tha data.
 * Run the script and observe the output plots:
-      * Plot 1 -> Verify correct background subtraction region. Adjust if needed. The region in red is used to detrmine background, ensure no signal here.
-          <img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/BKGSub.png" width="350">
-      * Plot 2 -> Verify apodization function. You can zoom in if needed. The blue curve is the measured interferogram, the green curve is the apodization function, anb the orange curve is the new interferogram after applying the apodization function.
-          <img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/Apod.png" width="350">
-      * Plot 3 -> Observe the data prep. Should be reflected around peak and padded with desired zeros in the middle.
-          <img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/Pad.png" width="350">
-      * Plot 4 & 5 -> Will show the Raw and Phase-Corrected FFT data
-      * Plot 6 -> TRPL computed by summing all data (integral TRPL). You can adjust range if needed.
-      * Plot 7 -> Resulting integral PL from the FFT
-          <img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/PL%20good.png" width="350"> <img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/Poor%20Apod.png" width="373">
-          
+     * Plot 1 -> Verify correct background subtraction region. Adjust if needed. The region in red is used to detrmine background, ensure no signal here.
+<img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/BKGSub.png" width="350">
+     * Plot 2 -> Verify apodization function. You can zoom in if needed. The blue curve is the measured interferogram, the green curve is the apodization function, anb the orange curve is the new interferogram after applying the apodization function.
+<img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/Apod.png" width="350">
+     * Plot 3 -> Observe the data prep. Should be reflected around peak and padded with desired zeros in the middle.
+<img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/Pad.png" width="350">
+     * Plot 4 & 5 -> Will show the Raw and Phase-Corrected FFT data
+     * Plot 6 -> TRPL computed by summing all data (integral TRPL). You can adjust range if needed.
+     * Plot 7 -> Resulting integral PL from the FFT
+<img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/PL%20good.png" width="350"> <img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/Poor%20Apod.png" width="373">
 3) Observe your resulting PL data and adjust FFT paramters accordingly. 
-      - This will generally involve the apodization width    
+* This will generally involve the apodization width    
 4) If you are satisfied with your FFT, ensure that "save_params = True". This will save the metadata into the "path" directory of our data for use in the MAP script.
 5) Run the "Gemini_MAP_script_CJH.py" script.
 * The basic way to run this script is to insert the directory for your data which also contains the FFT metadata from the preceding steps. Set "params_from_INTR_metadata = True" to import the metadata for the FFT at each time point.
