@@ -13,23 +13,23 @@ Recomended Procedure for TRPL MAP data:
       - Pick the appropriate wavelength range for your data, based on the detector used (Vis = 400-1000; NIR = 950-1700).
       - Pick appropraite FFT paramters for tha data.
       - Run the script and observe the output plots:
-          - Plot 1 -> Verify correct background subtraction region. Adjust if needed. The region in red is used to detrmine background, ensure no signal here.
+            - Plot 1 -> Verify correct background subtraction region. Adjust if needed. The region in red is used to detrmine background, ensure no signal here.
           
           <img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/BKGSub.png" width="350">
           
-          - Plot 2 -> Verify apodization function. You can zoom in if needed. The blue curve is the measured interferogram, the green curve is the apodization function, anb the orange curve is the new interferogram after applying the apodization function.
+            - Plot 2 -> Verify apodization function. You can zoom in if needed. The blue curve is the measured interferogram, the green curve is the apodization function, anb the orange curve is the new interferogram after applying the apodization function.
           
           <img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/Apod.png" width="350">
           
-          - Plot 3 -> Observe the data prep. Should be reflected around peak and padded with desired zeros in the middle.
+            - Plot 3 -> Observe the data prep. Should be reflected around peak and padded with desired zeros in the middle.
           
           <img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/Pad.png" width="350">
           
-          - Plot 4 & 5 -> Will show the Raw and Phase-Corrected FFT data
+            - Plot 4 & 5 -> Will show the Raw and Phase-Corrected FFT data
           
-          - Plot 6 -> TRPL computed by summing all data (integral TRPL). You can adjust range if needed.
+            - Plot 6 -> TRPL computed by summing all data (integral TRPL). You can adjust range if needed.
           
-          - Plot 7 -> Resulting integral PL from the FFT
+            - Plot 7 -> Resulting integral PL from the FFT
           
           <img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/PL%20good.png" width="350"> <img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/Poor%20Apod.png" width="373">
           
@@ -49,7 +49,8 @@ Recomended Procedure for TRPL MAP data:
             - For the standalone TRPL plot, it is posisble to pick a different plot range.
             - It is also possible to fit TRPL data (currently with a single exponential) over a given range. Toggle manually if you want the fit to be in the composite TRES plot. 
       - Here are some examples plots
-            -   Basic TRES:
+     
+            -   TRES with TRPL fit:
            
           <img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/Apod.png" width="350">
           
