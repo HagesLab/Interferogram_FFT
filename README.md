@@ -27,7 +27,7 @@ Recomended Procedure for TRPL MAP data:
           
           - Plot 7 -> Resulting integral PL from the FFT
           
-          !<img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/PL%20good.png" width="350"> <img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/Poor%20Apod.png" width="373">
+          <img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/PL%20good.png" width="350"> <img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/Poor%20Apod.png" width="373">
           
  3) Observe your resulting PL data and adjust FFT paramters accordingly. 
       - This will generally involve the apodization width    
