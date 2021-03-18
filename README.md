@@ -9,11 +9,11 @@ Recomended Procedure for TRPL MAP data:
 3) Pick the appropriate wavelength range for your data - based on the detector used (Vis = 400-1000; NIR = 950-1700).
 4) Run the "Gemini_Averaged_MAP_script_CJH.py" script.
       - This will sum the data over all times to maximize your signal for determining optimal FFT parameters. This is more effective than doing it at each time value since the FFT parameters should be the same for all times. Observe the plots that are generated.
-          - Plot 1 -> Verify correct background subtraction region. Adjust if needed.
+          - Plot 1 -> Verify correct background subtraction region. Adjust if needed. The region in red is used to detrmine background, ensure no signal here.
           
           <img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/BKGSub.png" width="350">
           
-          - Plot 2 -> Verify apodization function. You can zoom in if needed.
+          - Plot 2 -> Verify apodization function. You can zoom in if needed. The blue curve is the measured interferogram, the green curve is the apodization function, anb the orange curve is the new interferogram after applying the apodization function.
           
           <img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/Apod.png" width="350">
           
