@@ -50,10 +50,18 @@ Recomended Procedure for TRPL MAP data:
             - It is also possible to fit TRPL data (currently with a single exponential) over a given range. Toggle manually if you want the fit to be in the composite TRES plot. 
       - Here are some examples plots
             -   Basic TRES:
+           
           <img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/Apod.png" width="350">
+          
             -   TRES with averaging TRPL over multiple wavelengths:
+            
           <img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/Apod.png" width="350">
+          
             -   TRES with averaging TRPL over multiple time regions:
+           
           <img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/Apod.png" width="350">
+          
             -   TRES with TRPL fit:
+            
           <img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/Apod.png" width="350">
+          
