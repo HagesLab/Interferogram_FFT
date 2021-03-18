@@ -49,10 +49,10 @@ Recomended Procedure for TRPL MAP data:
 * Input a "rangeval" which will trim the data to an upper time to limit the computational load.
 * Check plotting ranges in the "Plotting Metadata" section of the code
 * Run the script. Adjust "Plotting Metadata" to get the desired plots.
-      * To use entire dataset for the TRPL data (for good resolution), set "Usemapdata=True". This will use the rawdata prior to losing a lot of signal in the FFT, apodiztion, etc. If "Usemapdata=False" and "AverageTRPL = False", you will plot the full integral TRPL, but it is computed after the FFT (not recommended).
-      * You can average the TRPL or PL data over a given range or ranges, input as a list. You must toggle the legend on/off manually when multiple curves are shown.
-      * For the standalone TRPL plot, it is posisble to pick a different plot range.
-      * It is also possible to fit TRPL data (currently with a single exponential) over a given range. Toggle manually if you want the fit to be in the composite TRES plot. 
+   * To use entire dataset for the TRPL data (for good resolution), set "Usemapdata=True". This will use the rawdata prior to losing a lot of signal in the FFT, apodiztion, etc. If "Usemapdata=False" and "AverageTRPL = False", you will plot the full integral TRPL, but it is computed after the FFT (not recommended).
+   * You can average the TRPL or PL data over a given range or ranges, input as a list. You must toggle the legend on/off manually when multiple curves are shown.
+   * For the standalone TRPL plot, it is posisble to pick a different plot range.
+   * It is also possible to fit TRPL data (currently with a single exponential) over a given range. Toggle manually if you want the fit to be in the composite TRES plot. 
 <!---      - Here are some examples plots
      
             -   TRES with TRPL fit:
