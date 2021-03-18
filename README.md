@@ -48,7 +48,7 @@ Recomended Procedure for TRPL MAP data:
             - You can average the TRPL or PL data over a given range or ranges, input as a list. You must toggle the legend on/off manually when multiple curves are shown.
             - For the standalone TRPL plot, it is posisble to pick a different plot range.
             - It is also possible to fit TRPL data (currently with a single exponential) over a given range. Toggle manually if you want the fit to be in the composite TRES plot. 
-      - Here are some examples plots
+<!---      - Here are some examples plots
      
             -   TRES with TRPL fit:
            
@@ -64,5 +64,5 @@ Recomended Procedure for TRPL MAP data:
           
             -   TRES with TRPL fit:
             
-          <img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/Apod.png" width="350">
+          <img src="https://github.com/HagesLab/Interferogram_FFT/blob/main/Readme%20Images/Apod.png" width="350">   -->
           
