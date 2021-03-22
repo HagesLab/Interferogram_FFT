@@ -152,6 +152,8 @@ else:
         BKGsub = True
         bkg_limit = -5  #ns  Before t_max
         shift_factor = manual_shift_factor
+        
+        BKGrange = np.array([time_data[0],bkg_limit],dtype='float')  #ns
 
 if save_params:
     params = {"apod_width":apodization_width, "apod_type":apod_type, "do_resample":resample, "resample_factor":resample_factor,
@@ -189,7 +191,6 @@ else:
     pos_data = pos_data - shift_factor    #Taken from shift_factor output in the _INTR analysis script for this data
 
    #Background Subtract TRPL Curves
-    BKGrange = np.array([time_data[0],bkg_limit],dtype='float')  #ns
     if BKGsub:
         index = [(np.abs(time_data-np.min(BKGrange))).argmin(),(np.abs(time_data-np.max(BKGrange))).argmin()]
         BKGval = np.mean(map_data[:,np.min(index):np.max(index)],axis=1)
