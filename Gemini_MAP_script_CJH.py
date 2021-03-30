@@ -4,7 +4,7 @@ Created on Sat Oct 24 23:08:58 2020
 
 @author: Chuck
 """
-from interferogram_functions import FFT_intr, import_MAP, prep_map, fetch_metadata
+from interferogram_functions import FFT_intr, import_MAP, prep_map, fetch_metadata, Fit_1exp
 import matplotlib.pyplot as plt
 import numpy as np
 import time
@@ -14,20 +14,17 @@ import matplotlib.colors
 from matplotlib.ticker import LogLocator
 from scipy import ndimage
 import ast
-from scipy.optimize import curve_fit
 
-
-path = r"C:\Users\Chuck\Dropbox (UFL)\UF\TRPL Computer\Calvin\142824"
+path = r"C:\Users\c.hages\Dropbox (UFL)\UF\TRPL Computer\Calvin\20210323\121354"
 params_from_INTR_metadata = True        #Import metadata from "...Averaged_MAP..." script - if not using this there may be bugs
 save_data = True                        #Save all plots and TRES data
-ImportTRES = True                       #Use this to prevent recalcualting the FFT - must have "..TRES.h5" already savded
-TRES_param_override = False             #Bugs in this feature! Don't recomend using at this point (add fitting and bkgsub info)
+ImportTRES = False                       #Use this to prevent recalcualting the FFT - must have "..TRES.h5" already savded
 
 # =============================================================================
 # If not importing TRES data
 # =============================================================================
 #trim time-scale to have a smaller data set
-rangeval = 20  #ns
+rangeval = 30  #ns
 #Plot Interferogram? (Background Subtracted and Shifted)
 intfPlot = False
 intrfxlims = "Full"   #if == "Full" no restriction, full data. Otherwise define range
@@ -36,16 +33,28 @@ intrfxlims = "Full"   #if == "Full" no restriction, full data. Otherwise define 
 # =============================================================================
 # If not importing params from metadata:
 # =============================================================================
-manual_shift_factor = 0.005837467299965371       #Hard to compute shift on time-resolved data at each time, do it manually
-save_params = False                              #Save new metadata to be able to import
+
+apodization_width=0.75
+apod_type="BH"    # "None" "Gauss" "Triangle" "Boxcar" "BH"
+resample=True
+resample_factor=4
+shift=False
+pad_test=True
+padfactor=15
+mean_sub = False
+baseline_sub_state = False
+BKGsub = False
+bkg_limit = -3  #ns  Before t_max
+shift_factor = 0.005837467299965371       #Hard to compute shift on time-resolved data at each time, do it manually
+
 
 # =============================================================================
 # Plotting Metadata
 # =============================================================================
 
 #All Plots
-timeRange = [-2,15]
-PLRange = [950.,1700.]
+timeRange = [-0.5,30]
+PLRange = [1050.,1600.]
 
 #TRES
 min_value = 32
@@ -54,26 +63,26 @@ sigmaval = 2   #For Gauss Filter
 
 #PL Plot
 AveragePL = False
-rangevalPL = [[0,10],[30,60]]  #ns
+rangevalPL = [[0,2],[4,20]]  #ns
 NormPL = True
 
 #TRPL Plot
 Usemapdata=True
 AverageTRPL = True                     #Only if not using mapdata
-rangevalTRPL = [[1100.,1400.]]  #nm    #Only if not using mapdata
+rangevalTRPL = [[590.,625.],[660.,725.]]  #nm    #Only if not using mapdata
 NormTRPL = True
 BKGTRPL = True
-TRPLmin_OM = 1e-7
+TRPLmin_OM = 1e-6
 overrideTRPLrange = False    #For standalone TRPL plot
 overidexrange = [-10,1000]    #Only if overriding range
 
 #Fitting TRPL
-FitTRPL = True
-fit_range = [[2,7.5]]   #List length must match the number of TRPL curves (line 64) / if mapdata then length 1
-fit_on_TRES = True
+FitTRPL = False
+fit_range = [[5,10]]   #List length must match the number of TRPL curves (line 64) / if mapdata then length 1
+fit_on_TRES = False
 
 #Composite TRES
-composite_legend = True
+composite_legend = False
 
 
 # =============================================================================
@@ -83,92 +92,33 @@ startTime = time.time()
 outputfilename = path + "\\" + os.path.split(path)[-1] + '_TRES.h5'
 pos_data, time_data, map_data = import_MAP(path)
 
-#Auto read all params
-if TRES_param_override:
-    allparam = fetch_metadata(path,"{}\\Plot_Params.txt")
-    manual_shift_factor = allparam['manual_shift_factor']
-    save_params = allparam['save_params']
-    rangeval = allparam['rangeval']
-    intfPlot = ast.literal_eval(allparam['intfPlot'])
-    intrfxlims = allparam["intrfxlims"]
-    timeRange = ast.literal_eval(allparam['timeRange'])
-    PLRange = ast.literal_eval(allparam['PLRange'])
-    Gauss_Filter = ast.literal_eval(allparam['Gauss_Filter'])
-    sigmaval = allparam['sigmaval']
-    AveragePL = ast.literal_eval(allparam['AveragePL'])
-    rangevalPL = ast.literal_eval(allparam['rangevalPL'])
-    NormPL = ast.literal_eval(allparam['NormPL'])
-    Usemapdata=ast.literal_eval(allparam['Usemapdata'])
-    AverageTRPL = ast.literal_eval(allparam['AverageTRPL'])
-    rangevalTRPL = ast.literal_eval(allparam['rangevalTRPL'])
-    NormTRPL = ast.literal_eval(allparam['NormTRPL'])
-    BKGTRPL = ast.literal_eval(allparam['BKGTRPL'])
-    TRPLmin_OM = allparam['TRPLmin_OM']
-    overrideTRPLrange = ast.literal_eval(allparam['overrideTRPLrange'])
-    overidexrange = ast.literal_eval(allparam['overidexrange'])
-    composite_legend = ast.literal_eval(allparam['composite_legend'])
-
 # Auto read params from INTR
 if params_from_INTR_metadata:
-    params = fetch_metadata(path,"{}\\Param_Import_metadata.txt")
+    params = fetch_metadata(path,"{}\\" + os.path.split(path)[-1] + '_FFTmetadata.txt')
 
 if params_from_INTR_metadata:
     apodization_width = params['apod_width']
     apod_type = params['apod_type']
-    resample = params['do_resample']
+    resample = ast.literal_eval(params['do_resample'])
     resample_factor = params['resample_factor']
-    shift = params["do_shift"]
-    pad_test = params['do_padzeros']
+    shift = ast.literal_eval(params["do_shift"])
+    pad_test = ast.literal_eval(params['do_padzeros'])
     padfactor = params['pad_factor']
-    mean_sub = params['do_mean_sub']
-    BKGsub = params['background_subtract']
+    mean_sub = ast.literal_eval(params['do_mean_sub'])
+    baseline_sub_state = ast.literal_eval(params['do_baseline_sub'])
+    BKGsub = ast.literal_eval(params['background_subtract'])
     BKGrange = [params['background_range_low'],params['background_range_high']]
     shift_factor = params['shift_factor']
-    save_params = False
 
 else:
-    if TRES_param_override:
-        apodization_width = allparam['apod_width']
-        apod_type = allparam['apod_type']
-        resample = allparam['do_resample']
-        resample_factor = allparam['resample_factor']
-        shift = allparam["do_shift"]
-        pad_test = allparam['do_padzeros']
-        padfactor = allparam['pad_factor']
-        mean_sub = allparam['do_mean_sub']
-        BKGsub = allparam['background_subtract']
-        BKGrange = [allparam['background_range_low'],allparam['background_range_high']]
-        shift_factor = allparam['shift_factor']
-        shift_factor = allparam['shift_factor']
-    else:
-        apodization_width=0.5
-        apod_type="BH"    # "None" "Gauss" "Triangle" "Boxcar" "BH"
-        resample="True"
-        resample_factor=4
-        shift="False"
-        pad_test="True"
-        padfactor=15
-        mean_sub = "True"
-        BKGsub = True
-        bkg_limit = -5  #ns  Before t_max
-        shift_factor = manual_shift_factor
-        
-        BKGrange = np.array([time_data[0],bkg_limit],dtype='float')  #ns
+    BKGrange = np.array([time_data[0],bkg_limit],dtype='float')  #ns
 
-if save_params:
-    params = {"apod_width":apodization_width, "apod_type":apod_type, "do_resample":resample, "resample_factor":resample_factor,
-              "do_shift":shift, "do_padzeros":pad_test, "pad_factor":padfactor, "do_mean_sub":mean_sub, "shift_factor":shift_factor,"background_subtract":BKGsub,"background_range_low":BKGrange[0], "background_range_high":BKGrange[1]}
-    with open(r"{}\Param_Import_metadata.txt".format(path), 'w+') as ofstream:
-        ofstream.write("# Params used in Gemini_MAP_script_CJH.py")
-        for param, val in params.items():
+if save_data:
+    allparam = {'rangeval':rangeval, 'intfPlot':intfPlot,'intrfxlims':intrfxlims, 'timeRange':timeRange, 'PLRange':PLRange, 'Gauss_Filter':Gauss_Filter, 'sigmaval':sigmaval, 'AveragePL':AveragePL, 'rangevalPL':rangevalPL,'NormPL':NormPL,'Usemapdata':Usemapdata,'AverageTRPL':AverageTRPL,'rangevalTRPL':rangevalTRPL,'NormTRPL':NormTRPL,'BKGTRPL':BKGTRPL,'TRPLmin_OM':TRPLmin_OM,'overrideTRPLrange':overrideTRPLrange , 'overidexrange':overidexrange, 'composite_legend':composite_legend,"apod_width":apodization_width, "apod_type":apod_type, "do_resample":resample, "resample_factor":resample_factor, "do_shift":shift, "do_padzeros":pad_test, "pad_factor":padfactor, "do_mean_sub":mean_sub, "shift_factor":shift_factor,"background_subtract":BKGsub,"background_range_low":BKGrange[0], "background_range_high":BKGrange[1],"baseline_sub_state":baseline_sub_state}
+    with open((r"{}\\"+os.path.split(path)[-1]+"_MapParams.txt").format(path), 'w+') as ofstream:
+        ofstream.write("# Params used to make plots in Gemini_MAP_script_CJH.py")
+        for param, val in allparam.items():
             ofstream.write("\n{}:\t{}".format(param, val))
-
-allparam = {'manual_shift_factor':manual_shift_factor,'save_params':save_params, 'rangeval':rangeval, 'intfPlot':intfPlot,'intrfxlims':intrfxlims, 'timeRange':timeRange, 'PLRange':PLRange, 'Gauss_Filter':Gauss_Filter, 'sigmaval':sigmaval, 'AveragePL':AveragePL, 'rangevalPL':rangevalPL,'NormPL':NormPL,'Usemapdata':Usemapdata,'AverageTRPL':AverageTRPL,'rangevalTRPL':rangevalTRPL,'NormTRPL':NormTRPL,'BKGTRPL':BKGTRPL,'TRPLmin_OM':TRPLmin_OM,'overrideTRPLrange':overrideTRPLrange , 'overidexrange':overidexrange ,'composite_legend':composite_legend,"apod_width":apodization_width, "apod_type":apod_type, "do_resample":resample, "resample_factor":resample_factor,
-              "do_shift":shift, "do_padzeros":pad_test, "pad_factor":padfactor, "do_mean_sub":mean_sub, "shift_factor":shift_factor,"background_subtract":BKGsub,"background_range_low":BKGrange[0], "background_range_high":BKGrange[1]}
-with open(r"{}\\Plot_Params.txt".format(path), 'w+') as ofstream:
-    ofstream.write("# Params used to make plots in Gemini_MAP_script_CJH.py")
-    for param, val in allparam.items():
-        ofstream.write("\n{}:\t{}".format(param, val))
 
 
 if ImportTRES:
@@ -188,14 +138,17 @@ else:
     time_data = time_data - t_max
 
    #Manual Shift of Peak
-    pos_data = pos_data - shift_factor    #Taken from shift_factor output in the _INTR analysis script for this data
+    if shift:
+        pos_data = pos_data - shift_factor    #Taken from shift_factor output in the _INTR analysis script for this data
 
    #Background Subtract TRPL Curves
     if BKGsub:
         index = [(np.abs(time_data-np.min(BKGrange))).argmin(),(np.abs(time_data-np.max(BKGrange))).argmin()]
         BKGval = np.mean(map_data[:,np.min(index):np.max(index)],axis=1)
         map_data = map_data - np.reshape(BKGval, (len(BKGval), 1))
-        
+
+   #if baseline_sub_state:
+
 
     #trim time-scale
     index = (np.abs(time_data-np.max(rangeval))).argmin()
@@ -203,7 +156,6 @@ else:
     time_data=time_data[0:np.max(index)]
 
     #Plot Raw Data (Background Subtracted and Shifted)
-
     if intfPlot:
         raw_timemesh, raw_posmesh = np.meshgrid(time_data,pos_data)
         plt.figure(1, dpi=120)
@@ -213,14 +165,21 @@ else:
         if intrfxlims != "Full":
             plt.xlim(intrfxlims.min(),intrfxlims.max())
 
-    preFFT_pos, preFFT_map = prep_map(pos_data,map_data,apodization_width,apod_type=apod_type,resample=resample,resample_factor=resample_factor,shift="False",pad_test=pad_test,padfactor=padfactor,mean_sub=mean_sub,plots="True")
+    preFFT_pos, preFFT_map = prep_map(pos_data,map_data,apodization_width,apod_type,resample,resample_factor,shift,pad_test,padfactor,mean_sub)
     print("Took {} sec".format(time.time() - startTime))
 
     #Perform FFT
-    wave, build_TRES = FFT_intr(preFFT_pos, preFFT_map,plots="False",scale="linear",correct="True")
+    wave, build_TRES = FFT_intr(preFFT_pos, preFFT_map)
     wave=wave[::-1]
     build_TRES=np.fliplr(np.array(build_TRES,dtype="float").T)
     print("Took {} sec".format(time.time() - startTime))
+
+
+
+
+
+
+
 
 # Plot the results (TRES)
 indexWL = [(np.abs(wave-np.min(PLRange))).argmin(),(np.abs(wave-np.max(PLRange))).argmin()]
@@ -324,25 +283,6 @@ if save_data:
     TRPLname = path + "\\" + os.path.split(path)[-1] + '_TRPLPlot.png'
     plt.savefig(TRPLname)
 
-#Fit TRPL
-def Fit_1exp(TRPL_data,time_data,fitrange):
-
-    def Exp1(time,A,tau):
-        return -time/tau + np.log(A)
-
-    #trim-data
-    low_index, high_index = (np.abs(time_data-np.min(fitrange))).argmin() , (np.abs(time_data-np.max(fitrange))).argmin()
-    TRPL_fit = TRPL_data[low_index:high_index]
-    time_fit = time_data[low_index:high_index]
-
-    popt, pcov = curve_fit(Exp1,time_fit,np.log(np.abs(TRPL_fit)))
-    perr = np.sqrt(np.diag(pcov))
-
-    TRPL_out = np.exp(Exp1(time_fit,*popt))
-    label =  r'$\tau:\ $' + np.array2string(popt[1], precision=2, separator=',', suppress_small=True) + ' ns'
-
-    return TRPL_out, time_fit, label, popt, perr
-
 if FitTRPL:
     if AverageTRPL:
         TRPL_fit_list, time_fit_list, fit_label_list = [],[],[]
@@ -356,7 +296,7 @@ if FitTRPL:
             fit_label_list.append(fit_label)
     else:
         TRPL_fit, time_fit, fit_label, popt, perr = Fit_1exp(integralTRPL,time_data,fit_range[0])
-       
+
 if FitTRPL:
     plt.figure(5, dpi=120)
     plt.title("Integral TRPL")
@@ -374,7 +314,7 @@ if FitTRPL:
     else:
         plt.plot(time_data,integralTRPL)
         plt.plot(time_fit,TRPL_fit,'k--',label = fit_label)
-    plt.legend()    
+    plt.legend()
     if save_data:
         TRPLFitname = path + "\\" + os.path.split(path)[-1] + '_TRPLFitPlot.png'
         plt.savefig(TRPLFitname)
@@ -443,4 +383,4 @@ if save_data:
     if AverageTRPL:
         hf.create_dataset('TRPL Metadata', data=rangevalTRPL)
     hf.close()
-    
+

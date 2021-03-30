@@ -13,6 +13,8 @@ import glob
 import csv
 import os
 import pandas as pd
+from scipy.optimize import curve_fit
+from BaselineRemoval import BaselineRemoval
 
 def import_INTR(path):
     allFiles = []
@@ -33,23 +35,28 @@ def import_INTR(path):
 
 
 
-def prep_interferogram(pos_data,intr_data,apodization_width,apod_type="BH",mean_sub="True",resample="True",resample_factor=2,shift="True",pad_test="True",padfactor=4,plots="True",pltzoom=False):
+def prep_interferogram(pos_data,intr_data,apodization_width,apod_type="BH",mean_sub=True,resample=True,resample_factor=4,shift=False,pad_test=True,padfactor=15,plots=True,pltzoom=False,zoom_range=[-.25,0.25],baseline_sub_state=False):
     intr_data, pos_data = Interf_calibration1D.interf_calibration1D(intr_data,pos_data)
     shiftfactor = 0
-    if mean_sub == "True":
+    raw_input_intr, raw_input_pos = intr_data, pos_data
+    if baseline_sub_state:
+        baseObj = BaselineRemoval(intr_data)
+        intr_data = baseObj.IModPoly(1)
+    if mean_sub:
         intr_data = intr_data-np.mean(intr_data)
-    if resample == "True":
+    baseline_fit = raw_input_intr - intr_data
+    if resample:
         fcubic = interp1d(pos_data, intr_data, kind='cubic')
         pos_data = np.linspace(pos_data[0],pos_data[-1],endpoint=True,num=len(pos_data)*resample_factor)
         intr_data = fcubic(pos_data)
     index_pos = np.argmin(abs(pos_data))
-    if shift == "True":
+    if shift:
         index_intr = np.argmax(intr_data)
         shiftfactor=(pos_data[index_intr]-pos_data[index_pos])
         pos_data = pos_data-shiftfactor
+    raw_intr = intr_data
+    raw_pos = pos_data
     if apod_type != "None":
-        raw_intr = intr_data
-        raw_pos = pos_data
         if apod_type == "Gauss":
             intr_func = np.exp(-(2.24*(pos_data)/apodization_width)**2)
         if apod_type == "BH":
@@ -76,7 +83,7 @@ def prep_interferogram(pos_data,intr_data,apodization_width,apod_type="BH",mean_
                     intr_func[i] = 0
         intr_data = intr_data*intr_func
     posdiff=np.diff(pos_data)[0]
-    if pad_test == "True":
+    if pad_test:
         padlen = 2**padfactor-len(intr_data)
         if padlen >0:
             intr_data = np.pad(intr_data,(0,int(padlen)),'constant', constant_values=(0))
@@ -86,32 +93,43 @@ def prep_interferogram(pos_data,intr_data,apodization_width,apod_type="BH",mean_
     left_axis_pos, right_axis_pos = pos_data[0:index_pos+1], pos_data[index_pos+1:]
     preFFT_data, preFFT_pos = np.concatenate((right_axis_intr,left_axis_intr)), np.concatenate((right_axis_pos,left_axis_pos))
 
-    if plots == "True":
-        #Plot interferogram data
-        plt.figure(1, dpi=120)
-        if apod_type != "None":
-            plt.plot(raw_pos,raw_intr/np.max(raw_intr))
-            plt.plot(pos_data[0:len(raw_pos)],(intr_data/np.max(intr_data))[0:len(raw_pos)])
-            plt.plot(raw_pos,intr_func)
-        else:
-            plt.plot(pos_data,intr_data)
+    if plots:
+        #Plot shifted data
+        plt.figure(0,dpi=120)
+        plt.title("Raw Comparison")
+        plt.plot(raw_input_pos, raw_input_intr,label="Raw")
+        plt.plot(raw_pos, raw_intr,label="Corrected")
+        plt.xlabel("Position / mm")
+        plt.ylabel("Counts / a.u.")
         if pltzoom:
-            plt.xlim(-0.25,0.25)
-        plt.xlabel('Position / mm')
-        plt.ylabel('Counts / a.u.')
-        plt.show()
+            plt.xlim(np.min(zoom_range),np.max(zoom_range))
+        plt.legend()
 
+        #Plot interferogram data
+        if apod_type != "None":
+            plt.figure(1, dpi=120)
+            plt.plot(raw_pos,raw_intr/np.max(raw_intr),label="Input Data")
+            plt.plot(pos_data[0:len(raw_pos)],(intr_data/np.max(intr_data))[0:len(raw_pos)],label="Apod Data")
+            plt.plot(raw_pos,intr_func,label="Apod Fxn")
+            plt.title("Apodization")
+            if pltzoom:
+                plt.xlim(np.min(zoom_range),np.max(zoom_range))
+            plt.xlabel('Position / mm')
+            plt.ylabel('Counts / a.u.')
+
+        #Plot Pre_FFT Data set
         plt.figure(2, dpi=120)
+        plt.title("Pre-FFT data")
+        plt.ylabel("Counts / a.u.")
         plt.plot(preFFT_data)
-        plt.show()
 
-    return preFFT_pos, preFFT_data, shiftfactor
+    return preFFT_pos, preFFT_data, shiftfactor, baseline_fit
 
-def FFT_intr(preFFT_pos,preFFT_data, plots="False",correct="True",scale="linear"):
+def FFT_intr(preFFT_pos,preFFT_data, plots=False,correct=True,scale="linear"):
     # Treat single TS 1D case as 2D case
     if preFFT_data.ndim == 1:
         preFFT_data = preFFT_data.reshape((len(preFFT_data),1))
-        
+
     #Do as much preparation outside of the loop over preFFT_data's timesteps as possible
     freq = np.fft.rfftfreq(preFFT_pos.shape[-1],np.diff(preFFT_pos)[0])
 
@@ -135,13 +153,18 @@ def FFT_intr(preFFT_pos,preFFT_data, plots="False",correct="True",scale="linear"
     # Do FFT on the data
     FFT_intr_full = np.fft.rfft(preFFT_data, axis=0)
 
-    if correct == "True":
+    if correct:
         #Phase Corrected
+        FFT_real_full_raw = FFT_intr_full.real
+        FFT_imag_full_raw = FFT_intr_full.imag
+        FFT_final_full_raw = FFT_real_full_raw + FFT_imag_full_raw
         FFT_real_full = FFT_intr_full.real*np.cos(np.angle(FFT_intr_full))
         FFT_imag_full = FFT_intr_full.imag*np.sin(np.angle(FFT_intr_full))
         FFT_final_full = FFT_real_full + FFT_imag_full
-    elif correct == "False":
-        FFT_final_full = FFT_intr_full.real + FFT_intr_full.imag
+    else:
+        FFT_real_full = FFT_intr_full.real
+        FFT_imag_full = FFT_intr_full.imag
+        FFT_final_full = FFT_real_full + FFT_imag_full
 
     # Trim according to calibrations
     freq_trim = freq[select]
@@ -149,31 +172,36 @@ def FFT_intr(preFFT_pos,preFFT_data, plots="False",correct="True",scale="linear"
 
     #Compute WL
     wave = fn(freq_trim)
-    if plots == "True":
-        for i in range(preFFT_data.shape[1]):
-            FFT_real = FFT_real_full[:,i]
-            FFT_imag = FFT_imag_full[:,i]
-            FFT_intr = FFT_intr_full[:,i]
 
-            plt.figure(1, dpi=120)
-            plt.plot(freq,FFT_intr.real,label="Real")
-            plt.plot(freq,FFT_intr.imag,label="Imag")
+    #Plot
+    if plots:
+        if correct:
+            FFT_real_raw = FFT_real_full_raw[select]
+            FFT_imag_raw = FFT_imag_full_raw[select]
+            FFT_intr_raw = FFT_final_full_raw[select]
+            plt.figure(0, dpi=120)
+            plt.plot(wave,FFT_intr_raw,"--",label="Full")
+            plt.plot(wave,FFT_real_raw,label="Real")
+            plt.plot(wave,FFT_imag_raw,label="Imag")
             plt.yscale(scale)
             plt.title("Raw FFT")
-            plt.xlabel("Freq.")
+            plt.xlabel("Wavelength (nm)")
             plt.legend()
-            plt.show()
 
-            if correct == "True":
-                plt.figure(2, dpi=120)
-                plt.plot(freq,FFT_real,label="Real")
-                plt.plot(freq,FFT_imag,label="Imag")
-                #plt.plot(freq,np.angle(FFT_intr))
-                plt.yscale(scale)
-                plt.title("Corrected FFT")
-                plt.xlabel("Freq.")
-                plt.legend()
-                plt.show()
+        FFT_real = FFT_real_full[select]
+        FFT_imag = FFT_imag_full[select]
+
+        plt.figure(1, dpi=120)
+        plt.plot(wave,FFT_intr_trim_full,"--",label="Full")
+        plt.plot(wave,FFT_real,label="Real")
+        plt.plot(wave,FFT_imag,label="Imag")
+        plt.yscale(scale)
+        if correct:
+            plt.title("Phase Corrected FFT")
+        else:
+            plt.title("Raw FFT")
+        plt.xlabel("Wavelength (nm)")
+        plt.legend()
 
     return wave, FFT_intr_trim_full
 
@@ -206,15 +234,15 @@ def import_MAP(path):
     return pos_data, time_data, map_data
 
 
-def prep_map(pos_data,map_data,apodization_width,apod_type="BH",mean_sub="True",resample="True",resample_factor=2,shift="True",pad_test="True",padfactor=4,plots="True"):
+def prep_map(pos_data,map_data,apodization_width,apod_type="BH",resample=True,resample_factor=2,shift=False,pad_test=True,padfactor=4,mean_sub=True):
     map_data, pos_data = Interf_calibration2D.interf_calibration2D(map_data,pos_data)
     prep_build=[]
     pos_data_raw = pos_data
-    
-    if mean_sub == "True":
+
+    if mean_sub:
         map_data = map_data - np.mean(map_data, axis=0)
 
-    if resample == "True":
+    if resample:
         fcubic = interp1d(pos_data_raw, map_data, kind='cubic', axis=0)
         pos_data_raw = np.linspace(pos_data_raw[0],pos_data_raw[-1],endpoint=True,num=len(pos_data_raw)*resample_factor)
         map_data = fcubic(pos_data_raw)
@@ -224,7 +252,7 @@ def prep_map(pos_data,map_data,apodization_width,apod_type="BH",mean_sub="True",
         pos_data = pos_data_raw
 
         index_pos = np.argmin(abs(pos_data))
-        if shift == "True":
+        if shift:
             index_intr = np.argmax(intr_data)
             #index_intr2 = np.argmax(intr_data, axis=1)
             shiftfactor=(pos_data[index_intr]-pos_data[index_pos])
@@ -239,7 +267,7 @@ def prep_map(pos_data,map_data,apodization_width,apod_type="BH",mean_sub="True",
                 intr_func = np.where(abs(pos_data) <= apodization_width,
                                       A0+A1*np.cos(np.pi*pos_data/apodization_width)+A2*np.cos(2*np.pi*pos_data/apodization_width)+A3*np.cos(3*np.pi*pos_data/apodization_width),
                                       0)
-            if apod_type == "Triangle":                        
+            if apod_type == "Triangle":
                 intr_func = np.where(abs(pos_data) <= apodization_width,
                                       1-abs(pos_data)/apodization_width,
                                       0)
@@ -248,7 +276,7 @@ def prep_map(pos_data,map_data,apodization_width,apod_type="BH",mean_sub="True",
 
             intr_data = intr_data*intr_func
         posdiff=np.diff(pos_data)[0]
-        if pad_test == "True":
+        if pad_test:
             padlen = int(padfactor*(2**np.ceil(np.log(len(intr_data))/np.log(2))))-len(intr_data)
             intr_data = np.pad(intr_data,(0,int(padlen)),'constant', constant_values=(0))
             pos_data = np.append(pos_data,np.linspace(pos_data[-1]+posdiff,(pos_data[-1]+posdiff)+padlen*posdiff,num=padlen))
@@ -280,3 +308,22 @@ def fetch_metadata(dir_name,openfile):  #  "{}\\Param_Import_metadata.txt"  or "
                     param_values_dict[param] = str(new_value)
 
     return param_values_dict
+
+#Fit TRPL
+def Fit_1exp(TRPL_data,time_data,fitrange):
+
+    def Exp1(time,A,tau):
+        return -time/tau + np.log(A)
+
+    #trim-data
+    low_index, high_index = (np.abs(time_data-np.min(fitrange))).argmin() , (np.abs(time_data-np.max(fitrange))).argmin()
+    TRPL_fit = TRPL_data[low_index:high_index]
+    time_fit = time_data[low_index:high_index]
+
+    popt, pcov = curve_fit(Exp1,time_fit,np.log(np.abs(TRPL_fit)))
+    perr = np.sqrt(np.diag(pcov))
+
+    TRPL_out = np.exp(Exp1(time_fit,*popt))
+    label =  r'$\tau:\ $' + np.array2string(popt[1], precision=2, separator=',', suppress_small=True) + ' ns'
+
+    return TRPL_out, time_fit, label, popt, perr
