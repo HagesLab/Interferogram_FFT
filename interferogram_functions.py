@@ -236,7 +236,7 @@ def import_MAP(path):
 
     return pos_data, time_data, map_data
 
-
+#Need to add baseline subtraction to MAP
 def prep_map(pos_data,map_data,apodization_width,apod_type="BH",resample=True,resample_factor=2,shift=False,pad_test=True,padfactor=4,mean_sub=True):
     map_data, pos_data = Interf_calibration2D.interf_calibration2D(map_data,pos_data)
     prep_build=[]
