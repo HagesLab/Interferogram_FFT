@@ -104,6 +104,7 @@ def prep_interferogram(pos_data,intr_data,apodization_width,apod_type="BH",mean_
         if pltzoom:
             plt.xlim(np.min(zoom_range),np.max(zoom_range))
         plt.legend()
+        plt.show()
 
         #Plot interferogram data
         if apod_type != "None":
@@ -116,12 +117,14 @@ def prep_interferogram(pos_data,intr_data,apodization_width,apod_type="BH",mean_
                 plt.xlim(np.min(zoom_range),np.max(zoom_range))
             plt.xlabel('Position / mm')
             plt.ylabel('Counts / a.u.')
+            plt.show()
 
         #Plot Pre_FFT Data set
         plt.figure(2, dpi=120)
         plt.title("Pre-FFT data")
         plt.ylabel("Counts / a.u.")
         plt.plot(preFFT_data)
+        plt.show()
 
     return preFFT_pos, preFFT_data, shiftfactor, baseline_fit
 
