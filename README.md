@@ -21,7 +21,7 @@ Data analysis follows the uploaded pdf [Understanding FTIR](https://github.com/H
 [The FFT in FTIR](https://www.essentialftir.com/fftTutorial.html#:~:text=The%20Fast%20Fourier%20Transform%20(FFT)%20applied%20to%20FTIR%20Data&text=The%20starting%20point%20is%20the,point%2C%20or%20%27ZPD%27)
 
 Recomended Procedure for TRPL MAP data:
-1) Read the [pdf](https://github.com/HagesLab/Interferogram_FFT/blob/main/Understanding_FTIR.pdf) and [link](https://www.essentialftir.com/fftTutorial.html#:~:text=The%20Fast%20Fourier%20Transform%20(FFT)%20applied%20to%20FTIR%20Data&text=The%20starting%20point%20is%20the,point%2C%20or%20%27ZPD%27) referenced above.
+1) Read the [pdf](https://github.com/HagesLab/Interferogram_FFT/Theory/blob/main/Understanding_FTIR.pdf) and [link](https://www.essentialftir.com/fftTutorial.html#:~:text=The%20Fast%20Fourier%20Transform%20(FFT)%20applied%20to%20FTIR%20Data&text=The%20starting%20point%20is%20the,point%2C%20or%20%27ZPD%27) referenced above.
 
 2) Run the *Gemini_Averaged_MAP_script_CJH.py* script.
 * This will sum the data over all times to maximize your signal for determining optimal FFT parameters. This is more effective than doing it at each time value since the FFT parameters should be the same for all times. Observe the plots that are generated.
