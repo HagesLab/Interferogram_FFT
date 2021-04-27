@@ -17,7 +17,7 @@ The following libraries are used:
    -  pandas
 
 ## Data Analysis
-Data analysis follows the uploaded pdf [Understanding FTIR](https://github.com/HagesLab/Interferogram_FFT/blob/main/Understanding_FTIR.pdf) and the following link
+Data analysis follows the uploaded pdf [Understanding FTIR](https://github.com/HagesLab/Interferogram_FFT/tree/main/Theory/Understanding_FTIR.pdf) and the following link
 [The FFT in FTIR](https://www.essentialftir.com/fftTutorial.html#:~:text=The%20Fast%20Fourier%20Transform%20(FFT)%20applied%20to%20FTIR%20Data&text=The%20starting%20point%20is%20the,point%2C%20or%20%27ZPD%27)
 
 Recomended Procedure for TRPL MAP data:
