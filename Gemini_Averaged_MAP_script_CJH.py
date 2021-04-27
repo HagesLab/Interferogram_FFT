@@ -11,7 +11,7 @@ import numpy as np
 from numpy import savetxt
 import os
 
-path = r"C:\Users\c.hages\Dropbox (UFL)\UF\TRPL Computer\Calvin\20210323\121354"
+path = r"C:\Users\Chuck\Dropbox (UFL)\UF\TRPL Computer\Aaron\144620"
 save_params = True          #Use this to create a txt file that can be imported into the "..._MAP_script"
 
 BKGsub = True               #Background Subtract - Generally True
@@ -21,7 +21,7 @@ end_wave = 1700             #For Plotting
 pltzoomstate = False        #Zoom in around the zero position in interferogram to better observe oscillations
 pltzoomrange = [-.25,.25]   #Range to zoom in on if pltzoomstate=True
 
-apodization_width=0.75      #Bounds (negative to positive) outside of which the data = 0
+apodization_width=0.3      #Bounds (negative to positive) outside of which the data = 0
 apod_type="BH"              #Function to use for apodization: "None" "Gauss" "Triangle" "Boxcar" or "BH" (Default)
 resample = True             #Enhance resolution by cubic interpolation
 resample_factor=4           #Factor to increase data points by
