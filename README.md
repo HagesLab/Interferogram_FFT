@@ -2,19 +2,14 @@
 Analysis of spectral interferogram data using a fast-Fourier transform (FFT) on the NIREOS GEMENI interferometer
 
 ## Installing
-Download scripts to your computer. Unzip the calibration files. 
-The following libraries are used:
-   -  matplotlib
-   -  numpy
-   -  time
+Download scripts to your computer. The main scripts are "Gemini_Averaged_MAP_script_CJH.py" and "Gemini_MAP_script_CJH.py". To run these scrpits, make sure they are in the same directory as all the other helper .py files. Alse, the 3 calibration files (202009015_parameters_cal.txt; 202009015_parameters_int.txt; 202009015_parameters_scale.txt) must also be in the same directory.
+
+The following libraries are used, and should be already installed if using Spyder:
+   -  matplotlib; numpy; scipy; time; os; ast; glob; csv
+   
+The following libraries may need to be installed via the "Anaconda Prompt":
    -  h5py (conda install h5py)
-   -  os
-   -  scipy
-   -  ast
    -  BaselineRemoval (pip install BaselineRemoval)
-   -  glob
-   -  csv
-   -  pandas
 
 ## Data Analysis
 Data analysis follows the uploaded pdf [Understanding FTIR](https://github.com/HagesLab/Interferogram_FFT/tree/main/Theory/Understanding_FTIR.pdf) and the following link
