@@ -11,6 +11,10 @@ The following libraries are used:
    -  os
    -  scipy
    -  ast
+   -  BaselineRemoval (pip install BaselineRemoval)
+   -  glob
+   -  csv
+   -  pandas
 
 ## Data Analysis
 Data analysis follows the uploaded pdf [Understanding FTIR](https://github.com/HagesLab/Interferogram_FFT/blob/main/Understanding_FTIR.pdf) and the following link
