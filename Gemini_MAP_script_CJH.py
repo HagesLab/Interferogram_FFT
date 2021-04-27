@@ -15,16 +15,16 @@ from matplotlib.ticker import LogLocator
 from scipy import ndimage
 import ast
 
-path = r"C:\Users\c.hages\Dropbox (UFL)\UF\TRPL Computer\Calvin\20210323\121354"
+path = r"C:\Users\Chuck\Dropbox (UFL)\UF\TRPL Computer\Tao\20210420\153506"
 params_from_INTR_metadata = True        #Import metadata from "...Averaged_MAP..." script - if not using this there may be bugs
-save_data = True                        #Save all plots and TRES data
-ImportTRES = False                       #Use this to prevent recalcualting the FFT - must have "..TRES.h5" already savded
+save_data = False                        #Save all plots and TRES data
+ImportTRES = True                       #Use this to prevent recalcualting the FFT - must have "..TRES.h5" already savded
 
 # =============================================================================
 # If not importing TRES data
 # =============================================================================
 #trim time-scale to have a smaller data set
-rangeval = 30  #ns
+rangeval = 100  #ns
 #Plot Interferogram? (Background Subtracted and Shifted)
 intfPlot = False
 intrfxlims = "Full"   #if == "Full" no restriction, full data. Otherwise define range
@@ -35,7 +35,7 @@ intrfxlims = "Full"   #if == "Full" no restriction, full data. Otherwise define 
 # =============================================================================
 
 apodization_width=0.75
-apod_type="BH"    # "None" "Gauss" "Triangle" "Boxcar" "BH"
+apod_type="None"    # "None" "Gauss" "Triangle" "Boxcar" "BH"
 resample=True
 resample_factor=4
 shift=False
@@ -53,11 +53,11 @@ shift_factor = 0.005837467299965371       #Hard to compute shift on time-resolve
 # =============================================================================
 
 #All Plots
-timeRange = [-0.5,30]
-PLRange = [1050.,1600.]
+timeRange = [-2,60]
+PLRange = [500.,1050.]
 
 #TRES
-min_value = 32
+min_value = 50
 Gauss_Filter = True
 sigmaval = 2   #For Gauss Filter
 
@@ -72,17 +72,17 @@ AverageTRPL = True                     #Only if not using mapdata
 rangevalTRPL = [[590.,625.],[660.,725.]]  #nm    #Only if not using mapdata
 NormTRPL = True
 BKGTRPL = True
-TRPLmin_OM = 1e-6
+TRPLmin_OM = 1e-4
 overrideTRPLrange = False    #For standalone TRPL plot
 overidexrange = [-10,1000]    #Only if overriding range
 
 #Fitting TRPL
-FitTRPL = False
-fit_range = [[5,10]]   #List length must match the number of TRPL curves (line 64) / if mapdata then length 1
-fit_on_TRES = False
+FitTRPL = True
+fit_range = [[5,12]]   #List length must match the number of TRPL curves (line 64) / if mapdata then length 1
+fit_on_TRES = True
 
 #Composite TRES
-composite_legend = False
+composite_legend = True
 
 
 # =============================================================================
