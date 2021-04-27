@@ -1,12 +1,16 @@
-
-
-
-
 # Interferogram_FFT
 Analysis of spectral interferogram data using a fast-Fourier transform (FFT) on the NIREOS GEMENI interferometer
 
 ## Installing
 Download scripts to your computer. Unzip the calibration files. 
+The following libraries are used:
+   -  matplotlib
+   -  numpy
+   -  time
+   -  h5py (conda install h5py)
+   -  os
+   -  scipy
+   -  ast
 
 ## Data Analysis
 Data analysis follows the uploaded pdf [Understanding FTIR](https://github.com/HagesLab/Interferogram_FFT/blob/main/Understanding_FTIR.pdf) and the following link
