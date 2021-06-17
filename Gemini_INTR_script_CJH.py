@@ -8,16 +8,18 @@ Created on Mon Nov 30 11:37:33 2020
 from interferogram_functions import prep_interferogram,  FFT_intr, import_INTR
 import matplotlib.pyplot as plt
 import os
+import numpy as np
 
-path = r"R:\Hages-Lab\TRPL Data\Ruiquan\20210602\145304"
+path = r"C:/Users/cfai2/Documents/src/Interferogram_FFT/20210615/132214"
 save_params = True          #Use this to create a txt file that can be imported into the "..._MAP_script" and export Plots
+save_FFT = True             # Save a .csv of wavelength/PL datasets - one PL per apodization
 
-start_wave = 550            #For Plotting - keep in mind the LP filter value
+start_wave = 500            #For Plotting - keep in mind the LP filter value
 end_wave = 1100             #For Plotting
 pltzoomstate = False        #Zoom in around the zero position in interferogram to better observe oscillations
 pltzoomrange = [-.25,.25]   #Range to zoom in on if pltzoomstate=True
 
-apodization_width=[0.7,0.5,0.3]     #Bounds (negative to positive) outside of which the data = 0, should be a list. Use many values in the list to compare Apod widths
+apodization_width=[1, 0.7,0.5,0.3]     #Bounds (negative to positive) outside of which the data = 0, should be a list. Use many values in the list to compare Apod widths
 apod_type="BH"              #Function to use for apodization: "None" "Gauss" "Triangle" "Boxcar" or "BH" (Default)
 resample = True             #Enhance resolution by cubic interpolation
 resample_factor=4           #Factor to increase data points by
@@ -51,6 +53,17 @@ if save_params:
     plt.savefig(PLname)
 if len(apodization_width) > 1:
     plt.legend()
+    
+if save_FFT:
+    header = []
+    outputfilename = path + "\\" + os.path.split(path)[-1] + '_FFTdata.csv'
+    data = np.empty((len(wave_list[0]), len(apodization_width) * 2))
+    for i, apod in enumerate(apodization_width):
+        data[:, 2*i] = wave_list[i]
+        data[:, 2*i+1] = FFT_intr_trim_list[i].flatten()
+        header.append("Wavelength [nm] apod={}".format(apod))
+        header.append("PL [counts] apod={}".format(apod))
+    np.savetxt(outputfilename, data, delimiter=',', header=",".join(header))
 
 # Best to turn this on only when you have found the desired params
 if save_params:

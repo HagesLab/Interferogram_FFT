@@ -14,7 +14,10 @@ import csv
 import os
 import pandas as pd
 from scipy.optimize import curve_fit
-from BaselineRemoval import BaselineRemoval
+try:
+    from BaselineRemoval import BaselineRemoval
+except ModuleNotFoundError:
+    print("Warning: BaselineRemoval library not found")
 
 def import_INTR(path):
     allFiles = []
