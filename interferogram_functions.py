@@ -206,7 +206,7 @@ def FFT_intr(preFFT_pos,preFFT_data, plots=False,correct=True,scale="linear"):
         plt.xlabel("Wavelength (nm)")
         plt.legend()
 
-    return wave, FFT_intr_trim_full
+    return wave, FFT_intr_trim_full.reshape((1,len(FFT_intr_trim_full)))[0]
 
 def import_MAP(path):
     allFiles = []

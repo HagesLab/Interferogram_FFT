@@ -8,16 +8,17 @@ Created on Mon Nov 30 11:37:33 2020
 from interferogram_functions import prep_interferogram,  FFT_intr, import_INTR
 import matplotlib.pyplot as plt
 import os
+import h5py
 
-path = r"R:\Hages-Lab\TRPL Data\Ruiquan\20210602\145304"
+path = r"C:\Users\Chuck\Dropbox (UFL)\UF\TRPL Computer\BaZrS3\Y-108\20210616\181252"
 save_params = True          #Use this to create a txt file that can be imported into the "..._MAP_script" and export Plots
 
-start_wave = 550            #For Plotting - keep in mind the LP filter value
+start_wave = 535            #For Plotting - keep in mind the LP filter value
 end_wave = 1100             #For Plotting
 pltzoomstate = False        #Zoom in around the zero position in interferogram to better observe oscillations
 pltzoomrange = [-.25,.25]   #Range to zoom in on if pltzoomstate=True
 
-apodization_width=[0.7,0.5,0.3]     #Bounds (negative to positive) outside of which the data = 0, should be a list. Use many values in the list to compare Apod widths
+apodization_width=[0.7]     #Bounds (negative to positive) outside of which the data = 0, should be a list. Use many values in the list to compare Apod widths
 apod_type="BH"              #Function to use for apodization: "None" "Gauss" "Triangle" "Boxcar" or "BH" (Default)
 resample = True             #Enhance resolution by cubic interpolation
 resample_factor=4           #Factor to increase data points by
@@ -61,3 +62,19 @@ if save_params:
         ofstream.write("# Params used in Gemini_INTR_script_CJH.py")
         for param, val in params.items():
             ofstream.write("\n{}:\t{}".format(param, val))
+            
+#Write 2D Data Set
+if save_params:
+    outputfilename_PL = path + "\\" + os.path.split(path)[-1] + '_INTR_PL.h5'
+    hf = h5py.File(outputfilename_PL,'w')
+    hf.create_dataset('Wavelength', data=wave_list)
+    hf.create_dataset('PL', data=FFT_intr_trim_list)
+    hf.create_dataset('Metadata (Apod Width)', data=apodization_width)
+    hf.close()
+
+#Peak PL Location
+# PeakPL = wave_list[0][FFT_intr_trim_list[0].argmax(axis=0)]
+
+
+
+    
