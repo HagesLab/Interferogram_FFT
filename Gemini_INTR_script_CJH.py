@@ -76,13 +76,13 @@ if save_params:
             ofstream.write("\n{}:\t{}".format(param, val))
             
 #Write 2D Data Set
-if save_params:
-    outputfilename_PL = path + "\\" + os.path.split(path)[-1] + '_INTR_PL.h5'
-    hf = h5py.File(outputfilename_PL,'w')
-    hf.create_dataset('Wavelength', data=wave_list)
-    hf.create_dataset('PL', data=FFT_intr_trim_list)
-    hf.create_dataset('Metadata (Apod Width)', data=apodization_width)
-    hf.close()
+# if save_params:
+#     outputfilename_PL = path + "\\" + os.path.split(path)[-1] + '_INTR_PL.h5'
+#     hf = h5py.File(outputfilename_PL,'w')
+#     hf.create_dataset('Wavelength', data=wave_list)
+#     hf.create_dataset('PL', data=FFT_intr_trim_list)
+#     hf.create_dataset('Metadata (Apod Width)', data=apodization_width)
+#     hf.close()
 
 #Peak PL Location
 # PeakPL = wave_list[0][FFT_intr_trim_list[0].argmax(axis=0)]
