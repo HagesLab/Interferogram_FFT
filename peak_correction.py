@@ -34,7 +34,7 @@ def find_peaks(raw_data, time_data, start_time=-1, end_time=20,
         The default is -1.
     end_time : float, optional
         Zero-shifted time where peak search should stop. 
-        Choose a value such that the noisy data is not included. 
+        Choose a value such that the noisy data are not included. 
         The default is 20.
     search_radius : int, optional
         Number of consecutive increasing points needed to register a peak. 
@@ -46,7 +46,8 @@ def find_peaks(raw_data, time_data, start_time=-1, end_time=20,
         Higher values make the search less sensitive.
         The default is 1.5.
     peak_radius : int, optional
-        A peak is defined as each peak_index +/- this many indices. The default is 20.
+        A peak is defined as each peak_index +/- a width determined by this. 
+        Right offset is 10x left offset because peaks have exponential decay tails. The default is 20.
     peaks_known : list(list(int, int, int, float)), optional
         Once a peak list is generated using this function, peak values may be updated
         according to new raw_data by passing the peak list back into this function.
@@ -108,7 +109,7 @@ def subtract_peaks(raw_data, peaks, reduce=[0.55, 0.90]):
                                           extraneous peak and then be subtracted from
                                           that extraneous peak)
         once all provided factors have been consumed.
-        The default is [0.55, 0.90].
+        The default is [0.55].
 
     Returns
     -------
@@ -170,6 +171,7 @@ if __name__ == "__main__":
         plt.yscale('log')
         
     integralTRPL = np.sum(map_data,axis=0)
+    # Ensure that the arguments of find_peaks are finding the peaks correctly first
     peaks = find_peaks(integralTRPL, time_data)
         
     #Plot Full TRPL
@@ -186,6 +188,7 @@ if __name__ == "__main__":
     for peak in peaks:
         plt.plot(time_data[peak[0]:peak[1]], integralTRPL[peak[0]:peak[1]])
         
+    # Tune the reduction factors after tuning find_peaks()
     reduce_factors = [0.55]
     subtract_peaks(integralTRPL, peaks, reduce=reduce_factors)
     
