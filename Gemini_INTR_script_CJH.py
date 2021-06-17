@@ -14,7 +14,7 @@ path = r"C:/Users/cfai2/Documents/src/Interferogram_FFT/20210615/132214"
 save_params = True          #Use this to create a txt file that can be imported into the "..._MAP_script" and export Plots
 save_FFT = True             # Save a .csv of wavelength/PL datasets - one PL per apodization
 
-start_wave = 500            #For Plotting - keep in mind the LP filter value
+start_wave = 535            #For Plotting - keep in mind the LP filter value
 end_wave = 1100             #For Plotting
 pltzoomstate = False        #Zoom in around the zero position in interferogram to better observe oscillations
 pltzoomrange = [-.25,.25]   #Range to zoom in on if pltzoomstate=True
@@ -74,3 +74,19 @@ if save_params:
         ofstream.write("# Params used in Gemini_INTR_script_CJH.py")
         for param, val in params.items():
             ofstream.write("\n{}:\t{}".format(param, val))
+            
+#Write 2D Data Set
+if save_params:
+    outputfilename_PL = path + "\\" + os.path.split(path)[-1] + '_INTR_PL.h5'
+    hf = h5py.File(outputfilename_PL,'w')
+    hf.create_dataset('Wavelength', data=wave_list)
+    hf.create_dataset('PL', data=FFT_intr_trim_list)
+    hf.create_dataset('Metadata (Apod Width)', data=apodization_width)
+    hf.close()
+
+#Peak PL Location
+# PeakPL = wave_list[0][FFT_intr_trim_list[0].argmax(axis=0)]
+
+
+
+    
