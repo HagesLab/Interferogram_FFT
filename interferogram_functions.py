@@ -219,14 +219,14 @@ def import_MAP(path):
 
     for i in range(len(allFiles)):
         namestest = allFiles[i].split('_')[-1]
-        if namestest == r"POS.txt":
+        if namestest == r"MAP.txt":
+            with open(allFiles[i],'r') as j:
+                map_data = np.array(list(csv.reader(j,delimiter="\t")),dtype='float')
+        elif namestest == r"POS.txt":
             with open(allFiles[i],'r') as j:
                 pos_data = np.array(list(csv.reader(j,delimiter="\t")),dtype='float')[0,:]
                 samplename = os.path.split(allFiles[i])[-1].split(".")[0]
                 samplename = samplename.replace("_POS","")
-        elif namestest == r"MAP.txt":
-            with open(allFiles[i],'r') as j:
-                map_data = np.array(list(csv.reader(j,delimiter="\t")),dtype='float')
         elif namestest == r"TIME.txt":
             with open(allFiles[i],'r') as j:
                 time_data = np.array(list(csv.reader(j,delimiter="\t")),dtype='float')[0,:]

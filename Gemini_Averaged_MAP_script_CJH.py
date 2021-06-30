@@ -10,8 +10,10 @@ import numpy as np
 from numpy import savetxt
 import os
 
-path = r"C:\Users\Chuck\Dropbox (UFL)\UF\TRPL Computer\Aaron\144620"
+path = r"C:\Users\c.hages\Dropbox (UFL)\UF\TRPL Computer\Aaron\144620"
 save_params = True          #Use this to create a txt file that can be imported into the "..._MAP_script"
+save_PL = True             # Save a .csv of wavelength/PL datasets - one PL per apodization
+save_TRPL = True             # Save a .csv of the avereraged Time/PL dataset
 
 BKGsub = True               #Background Subtract - Generally True
 bkg_limit = -3              #ns before the TRPL peak to average the background data up to - see plot
@@ -20,7 +22,7 @@ end_wave = 1700             #For Plotting
 pltzoomstate = False        #Zoom in around the zero position in interferogram to better observe oscillations
 pltzoomrange = [-.25,.25]   #Range to zoom in on if pltzoomstate=True
 
-apodization_width=0.3      #Bounds (negative to positive) outside of which the data = 0
+apodization_width=[1, 0.7,0.5,0.3]     #Bounds (negative to positive) outside of which the data = 0, should be a list. Use many values in the list to compare Apod widths
 apod_type="BH"              #Function to use for apodization: "None" "Gauss" "Triangle" "Boxcar" or "BH" (Default)
 resample = True             #Enhance resolution by cubic interpolation
 resample_factor=4           #Factor to increase data points by
@@ -29,6 +31,7 @@ pad_test = True             #Pad the data with zeros to enhance FFT resolution
 padfactor = 14              #Total points will be filled with zeros untill 2**padfactor  -> 2**15 = 32k (default), 2**16=65k
 baseline_sub_state = False   #Perform IModPoly baseline subtraction if not a linear baseline (poly = 1)
 mean_sub = True             #Shift the average value of the interferogram to be zero
+plots = True               #Deactivate plots from FFT and prep - useful if using more than one apod width to compare.
 
 TRPLmin_OM = 1e-4           #How many orders of magnitude to plot down in y-scale for TRPL curve
 
@@ -58,8 +61,12 @@ index=(np.abs(time_data)).argmin()
 AVG_map_data = map_data[:,index]
 
 
-preFFT_pos, preFFT_data, shiftfactor, baseline_fit = prep_interferogram(pos_data,AVG_map_data,apodization_width,apod_type=apod_type,resample=resample,resample_factor=resample_factor,shift=shift,pad_test=pad_test,padfactor=padfactor,mean_sub=mean_sub,plots=True,pltzoom=pltzoomstate,zoom_range=pltzoomrange,baseline_sub_state=baseline_sub_state)
-wave, FFT_intr_trim = FFT_intr(preFFT_pos,preFFT_data,plots=True,scale="linear",correct=True)
+wave_list, FFT_intr_trim_list = [], []
+for i in range(len(apodization_width)):
+    preFFT_pos, preFFT_data, shiftfactor, baseline_fit = prep_interferogram(pos_data,AVG_map_data,apodization_width[i],apod_type=apod_type,resample=resample,resample_factor=resample_factor,shift=shift,pad_test=pad_test,padfactor=padfactor,mean_sub=mean_sub,plots=plots,pltzoom=pltzoomstate,zoom_range=pltzoomrange,baseline_sub_state=baseline_sub_state)
+    wave, FFT_intr_trim = FFT_intr(preFFT_pos,preFFT_data,plots=True,scale="linear",correct=True)
+    wave_list.append(wave)
+    FFT_intr_trim_list.append(FFT_intr_trim)
 
 
 #Plot Full TRPL
@@ -74,12 +81,39 @@ plt.yscale('log')
 
 #Plot Full PL
 plt.figure(5, dpi=120)
-#plt.ylabel("Counts / a.u.")
-#plt.xlabel("Wavelength / nm")
-#plt.title("Average PL")
-plt.plot(wave,FFT_intr_trim)
+plt.ylabel("Counts / a.u.")
+plt.xlabel("Wavelength / nm")
+plt.title("Average PL")
+for i in range(len(wave_list)):
+    plt.plot(wave_list[i],FFT_intr_trim_list[i],label=apod_type+' Apod '+str(apodization_width[i])+' mm')
 plt.xlim(start_wave,end_wave)
 plt.yscale('linear')
+if save_params:
+    PLname = path + "\\" + os.path.split(path)[-1] + '_PLPlot.png'
+    plt.savefig(PLname)
+if len(apodization_width) > 1:
+    plt.legend()
+
+if save_PL:
+    header = []
+    outputfilename = path + "\\" + os.path.split(path)[-1] + '_PLdata.csv'
+    data = np.empty((len(wave_list[0]), len(apodization_width) * 2))
+    for i, apod in enumerate(apodization_width):
+        data[:, 2*i] = wave_list[i]
+        data[:, 2*i+1] = FFT_intr_trim_list[i].flatten()
+        header.append("Wavelength [nm] apod={}".format(apod))
+        header.append("PL [counts] apod={}".format(apod))
+    np.savetxt(outputfilename, data, delimiter=',', header=",".join(header))
+
+if save_TRPL:
+    header = []
+    outputfilename = path + "\\" + os.path.split(path)[-1] + '_TRPLdata.csv'
+    data = np.empty((len(time_data), 2))
+    data[:, 0] = time_data
+    data[:, 1] = integralTRPL.flatten()
+    header.append("Time [ns]")
+    header.append("PL [counts]")
+    np.savetxt(outputfilename, data, delimiter=',', header=",".join(header))
 
 # Best to turn this on only when you have found the desired params
 if save_params:
@@ -91,5 +125,6 @@ if save_params:
         for param, val in params.items():
             ofstream.write("\n{}:\t{}".format(param, val))
 
-    outputfilename_baseline = path + "\\" + os.path.split(path)[-1] + '_BaselineFit.txt'
-    savetxt(outputfilename_baseline,baseline_fit,delimiter='  ')
+    if baseline_sub_state:
+        outputfilename_baseline = path + "\\" + os.path.split(path)[-1] + '_BaselineFit.txt'
+        savetxt(outputfilename_baseline,baseline_fit,delimiter='  ')

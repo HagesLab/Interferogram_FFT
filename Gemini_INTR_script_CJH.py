@@ -9,10 +9,11 @@ from interferogram_functions import prep_interferogram,  FFT_intr, import_INTR
 import matplotlib.pyplot as plt
 import os
 import numpy as np
+from numpy import savetxt
 
 path = r"C:/Users/cfai2/Documents/src/Interferogram_FFT/20210615/132214"
 save_params = True          #Use this to create a txt file that can be imported into the "..._MAP_script" and export Plots
-save_FFT = True             # Save a .csv of wavelength/PL datasets - one PL per apodization
+save_PL = True             # Save a .csv of wavelength/PL datasets - one PL per apodization
 
 start_wave = 535            #For Plotting - keep in mind the LP filter value
 end_wave = 1100             #For Plotting
@@ -53,10 +54,10 @@ if save_params:
     plt.savefig(PLname)
 if len(apodization_width) > 1:
     plt.legend()
-    
-if save_FFT:
+
+if save_PL:
     header = []
-    outputfilename = path + "\\" + os.path.split(path)[-1] + '_FFTdata.csv'
+    outputfilename = path + "\\" + os.path.split(path)[-1] + '_PLdata.csv'
     data = np.empty((len(wave_list[0]), len(apodization_width) * 2))
     for i, apod in enumerate(apodization_width):
         data[:, 2*i] = wave_list[i]
@@ -74,19 +75,7 @@ if save_params:
         ofstream.write("# Params used in Gemini_INTR_script_CJH.py")
         for param, val in params.items():
             ofstream.write("\n{}:\t{}".format(param, val))
-            
-#Write 2D Data Set
-# if save_params:
-#     outputfilename_PL = path + "\\" + os.path.split(path)[-1] + '_INTR_PL.h5'
-#     hf = h5py.File(outputfilename_PL,'w')
-#     hf.create_dataset('Wavelength', data=wave_list)
-#     hf.create_dataset('PL', data=FFT_intr_trim_list)
-#     hf.create_dataset('Metadata (Apod Width)', data=apodization_width)
-#     hf.close()
 
-#Peak PL Location
-# PeakPL = wave_list[0][FFT_intr_trim_list[0].argmax(axis=0)]
-
-
-
-    
+    if baseline_sub_state:
+        outputfilename_baseline = path + "\\" + os.path.split(path)[-1] + '_BaselineFit.txt'
+        savetxt(outputfilename_baseline,baseline_fit,delimiter='  ')
