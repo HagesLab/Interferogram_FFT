@@ -244,7 +244,6 @@ def prep_map(pos_data,map_data,apodization_width,apod_type="BH",resample=True,re
     map_data, pos_data = Interf_calibration2D.interf_calibration2D(map_data,pos_data)
     prep_build=[]
     pos_data_raw = pos_data
-
     if mean_sub:
         map_data = map_data - np.mean(map_data, axis=0)
 
@@ -294,6 +293,87 @@ def prep_map(pos_data,map_data,apodization_width,apod_type="BH",resample=True,re
         prep_build.append(preFFT_data)
 
     return preFFT_pos, np.array(prep_build,dtype='float').T
+
+def FFT_map(preFFT_pos,preFFT_data, plots=False,correct=True,scale="linear"):
+    # Treat single TS 1D case as 2D case
+    if preFFT_data.ndim == 1:
+        preFFT_data = preFFT_data.reshape((len(preFFT_data),1))
+
+    #Do as much preparation outside of the loop over preFFT_data's timesteps as possible
+    freq = np.fft.rfftfreq(preFFT_pos.shape[-1],np.diff(preFFT_pos)[0])
+
+    #Import calibration for WL
+    items = os.listdir(".")
+    for names in items:
+        if names.endswith("parameters_cal.txt"):
+            filename = names
+    ref = pd.read_csv(filename, sep="\t", header=None)
+    first_row = (ref.iloc[0])
+    second_row = (ref.iloc[1])
+    wavelength = first_row.to_numpy(dtype='float64')
+    reciprocal = second_row.to_numpy(dtype='float64')
+    min_freq = np.min(reciprocal)
+    max_freq = np.max(reciprocal)
+    # Is freq[] always in ascending order? If so this can be made much simpler with array slicing
+    select = np.intersect1d(np.where(freq >= min_freq), np.where(freq <= max_freq))
+
+    fn = interp1d(reciprocal, wavelength, kind="linear")
+
+    # Do FFT on the data
+    FFT_intr_full = np.fft.rfft(preFFT_data, axis=0)
+
+    if correct:
+        #Phase Corrected
+        FFT_real_full_raw = FFT_intr_full.real
+        FFT_imag_full_raw = FFT_intr_full.imag
+        FFT_final_full_raw = FFT_real_full_raw + FFT_imag_full_raw
+        FFT_real_full = FFT_intr_full.real*np.cos(np.angle(FFT_intr_full))
+        FFT_imag_full = FFT_intr_full.imag*np.sin(np.angle(FFT_intr_full))
+        FFT_final_full = FFT_real_full + FFT_imag_full
+    else:
+        FFT_real_full = FFT_intr_full.real
+        FFT_imag_full = FFT_intr_full.imag
+        FFT_final_full = FFT_real_full + FFT_imag_full
+
+    # Trim according to calibrations
+    freq_trim = freq[select]
+    FFT_intr_trim_full = FFT_final_full[select]
+
+    #Compute WL
+    wave = fn(freq_trim)
+
+    #Plot
+    if plots:
+        if correct:
+            FFT_real_raw = FFT_real_full_raw[select]
+            FFT_imag_raw = FFT_imag_full_raw[select]
+            FFT_intr_raw = FFT_final_full_raw[select]
+            plt.figure(0, dpi=120)
+            plt.plot(wave,FFT_intr_raw,"--",label="Full")
+            plt.plot(wave,FFT_real_raw,label="Real")
+            plt.plot(wave,FFT_imag_raw,label="Imag")
+            plt.yscale(scale)
+            plt.title("Raw FFT")
+            plt.xlabel("Wavelength (nm)")
+            plt.legend()
+
+        FFT_real = FFT_real_full[select]
+        FFT_imag = FFT_imag_full[select]
+
+        plt.figure(1, dpi=120)
+        plt.plot(wave,FFT_intr_trim_full,"--",label="Full")
+        plt.plot(wave,FFT_real,label="Real")
+        plt.plot(wave,FFT_imag,label="Imag")
+        plt.yscale(scale)
+        if correct:
+            plt.title("Phase Corrected FFT")
+        else:
+            plt.title("Raw FFT")
+        plt.xlabel("Wavelength (nm)")
+        plt.legend()
+
+    return wave, FFT_intr_trim_full
+
 
 def fetch_metadata(dir_name,openfile):  #  "{}\\Param_Import_metadata.txt"  or "{}\\Plot_Params.txt"
     with open(openfile.format(dir_name), "r") as ifstream:

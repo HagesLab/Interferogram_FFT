@@ -4,7 +4,7 @@ Created on Sat Oct 24 23:08:58 2020
 
 @author: Chuck
 """
-from interferogram_functions import FFT_intr, import_MAP, prep_map, fetch_metadata, Fit_1exp
+from interferogram_functions import FFT_map, import_MAP, prep_map, fetch_metadata, Fit_1exp
 import matplotlib.pyplot as plt
 import numpy as np
 import time
@@ -15,10 +15,10 @@ from matplotlib.ticker import LogLocator
 from scipy import ndimage
 import ast
 
-path = r"C:\Users\Chuck\Dropbox (UFL)\UF\TRPL Computer\Tao\20210420\153506"
-params_from_INTR_metadata = True        #Import metadata from "...Averaged_MAP..." script - if not using this there may be bugs
-save_data = False                        #Save all plots and TRES data
-ImportTRES = True                       #Use this to prevent recalcualting the FFT - must have "..TRES.h5" already savded
+path = r"C:\Users\c.hages\Dropbox (UFL)\UF\TRPL Computer\Tao\20210701\135216"
+params_from_INTR_metadata = True        #Import metadata from "...Averaged_MAP..." script - if not using this there may be bugs.
+save_data = True                        #Save all plots and TRES data
+ImportTRES = False                       #Use this to prevent recalcualting the FFT - must have "..TRES.h5" already savded
 
 # =============================================================================
 # If not importing TRES data
@@ -43,7 +43,7 @@ pad_test=True
 padfactor=15
 mean_sub = False
 baseline_sub_state = False
-BKGsub = False
+BKGsub = True
 bkg_limit = -3  #ns  Before t_max
 shift_factor = 0.005837467299965371       #Hard to compute shift on time-resolved data at each time, do it manually
 
@@ -53,8 +53,8 @@ shift_factor = 0.005837467299965371       #Hard to compute shift on time-resolve
 # =============================================================================
 
 #All Plots
-timeRange = [-2,60]
-PLRange = [500.,1050.]
+timeRange = [-10,60]
+PLRange = [610.,1050.]
 
 #TRES
 min_value = 50
@@ -63,14 +63,14 @@ sigmaval = 2   #For Gauss Filter
 
 #PL Plot
 AveragePL = False
-rangevalPL = [[0,2],[4,20]]  #ns
-NormPL = True
+rangevalPL = [[0,1],[4,20]]  #ns
+NormPL = False
 
 #TRPL Plot
-Usemapdata=True
+Usemapdata= True      #To maximize TRPL decay
 AverageTRPL = True                     #Only if not using mapdata
-rangevalTRPL = [[590.,625.],[660.,725.]]  #nm    #Only if not using mapdata
-NormTRPL = True
+rangevalTRPL = [[650,670]]  #nm    #Only if not using mapdata
+NormTRPL = False
 BKGTRPL = True
 TRPLmin_OM = 1e-4
 overrideTRPLrange = False    #For standalone TRPL plot
@@ -169,7 +169,7 @@ else:
     print("Took {} sec".format(time.time() - startTime))
 
     #Perform FFT
-    wave, build_TRES = FFT_intr(preFFT_pos, preFFT_map)
+    wave, build_TRES = FFT_map(preFFT_pos, preFFT_map)
     wave=wave[::-1]
     build_TRES=np.fliplr(np.array(build_TRES,dtype="float").T)
     print("Took {} sec".format(time.time() - startTime))
@@ -261,6 +261,7 @@ else:
         index = [(np.abs(time_data-np.min(BKGrange))).argmin(),(np.abs(time_data-np.max(BKGrange))).argmin()]
         BKGval = np.mean(integralTRPL[np.min(index):np.max(index)])
         integralTRPL = integralTRPL - BKGval
+
 
 
 

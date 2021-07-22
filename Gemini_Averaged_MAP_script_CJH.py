@@ -10,7 +10,7 @@ import numpy as np
 from numpy import savetxt
 import os
 
-path = r"C:\Users\c.hages\Dropbox (UFL)\UF\TRPL Computer\Aaron\144620"
+path = r"C:\Users\c.hages\Dropbox (UFL)\UF\TRPL Computer\Tao\20210701\135216"
 save_params = True          #Use this to create a txt file that can be imported into the "..._MAP_script"
 save_PL = True             # Save a .csv of wavelength/PL datasets - one PL per apodization
 save_TRPL = True             # Save a .csv of the avereraged Time/PL dataset
@@ -22,7 +22,7 @@ end_wave = 1700             #For Plotting
 pltzoomstate = False        #Zoom in around the zero position in interferogram to better observe oscillations
 pltzoomrange = [-.25,.25]   #Range to zoom in on if pltzoomstate=True
 
-apodization_width=[1, 0.7,0.5,0.3]     #Bounds (negative to positive) outside of which the data = 0, should be a list. Use many values in the list to compare Apod widths
+apodization_width=[0.4]     #Bounds (negative to positive) outside of which the data = 0, should be a list. Use many values in the list to compare Apod widths. It will only save the first value in metadata for MAP_script!
 apod_type="BH"              #Function to use for apodization: "None" "Gauss" "Triangle" "Boxcar" or "BH" (Default)
 resample = True             #Enhance resolution by cubic interpolation
 resample_factor=4           #Factor to increase data points by
@@ -118,7 +118,7 @@ if save_TRPL:
 # Best to turn this on only when you have found the desired params
 if save_params:
     outputfilename_meta = path + "\\" + os.path.split(path)[-1] + '_FFTmetadata.txt'
-    params = {"apod_width":apodization_width, "apod_type":apod_type, "do_resample":resample, "resample_factor":resample_factor,
+    params = {"apod_width":apodization_width[0], "apod_type":apod_type, "do_resample":resample, "resample_factor":resample_factor,
               "do_shift":shift, "do_padzeros":pad_test, "pad_factor":padfactor, "do_baseline_sub":baseline_sub_state, "do_mean_sub":mean_sub,"shift_factor":shiftfactor,"background_subtract":BKGsub,"background_range_low":np.min(BKGrange), "background_range_high":np.max(BKGrange)}
     with open(outputfilename_meta.format(path), 'w+') as ofstream:
         ofstream.write("# Params used in Gemini_Averaged_MAP_script_CJH.py")
