@@ -12,9 +12,9 @@ import os
 import numpy as np
 from numpy import savetxt
 
-path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20210901\172740"
-save_params = False          #Use this to create a txt file that can be imported into the "..._MAP_script" and export Plots
-save_PL = False             # Save a .csv of wavelength/PL datasets - one PL per apodization
+path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20210915\120726"
+save_params = True          #Use this to create a txt file that can be imported into the "..._MAP_script" and export Plots
+save_PL = True             # Save a .csv of wavelength/PL datasets - one PL per apodization
 
 start_wave = 400            #For Plotting - keep in mind the LP filter value
 end_wave = 1000             #For Plotting
