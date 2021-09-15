@@ -5,22 +5,23 @@ Created on Mon Nov 30 11:37:33 2020
 @author: Chuck
 """
 
+# New version: FFT fixed
 from interferogram_functions import prep_interferogram,  FFT_intr, import_INTR
 import matplotlib.pyplot as plt
 import os
 import numpy as np
 from numpy import savetxt
 
-path = r"C:/Users/cfai2/Documents/src/Interferogram_FFT/20210615/132214"
-save_params = True          #Use this to create a txt file that can be imported into the "..._MAP_script" and export Plots
-save_PL = True             # Save a .csv of wavelength/PL datasets - one PL per apodization
+path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20210901\172740"
+save_params = False          #Use this to create a txt file that can be imported into the "..._MAP_script" and export Plots
+save_PL = False             # Save a .csv of wavelength/PL datasets - one PL per apodization
 
-start_wave = 535            #For Plotting - keep in mind the LP filter value
-end_wave = 1100             #For Plotting
+start_wave = 400            #For Plotting - keep in mind the LP filter value
+end_wave = 1000             #For Plotting
 pltzoomstate = False        #Zoom in around the zero position in interferogram to better observe oscillations
 pltzoomrange = [-.25,.25]   #Range to zoom in on if pltzoomstate=True
 
-apodization_width=[1, 0.7,0.5,0.3]     #Bounds (negative to positive) outside of which the data = 0, should be a list. Use many values in the list to compare Apod widths
+apodization_width=[0.1,0.3,0.5,0.7,1,1.5]     #Bounds (negative to positive) outside of which the data = 0, should be a list. Use many values in the list to compare Apod widths
 apod_type="BH"              #Function to use for apodization: "None" "Gauss" "Triangle" "Boxcar" or "BH" (Default)
 resample = True             #Enhance resolution by cubic interpolation
 resample_factor=4           #Factor to increase data points by

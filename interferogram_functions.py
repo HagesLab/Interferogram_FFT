@@ -163,14 +163,14 @@ def FFT_intr(preFFT_pos,preFFT_data, plots=False,correct=True,scale="linear"):
         #Phase Corrected
         FFT_real_full_raw = FFT_intr_full.real
         FFT_imag_full_raw = FFT_intr_full.imag
-        FFT_final_full_raw = FFT_real_full_raw + FFT_imag_full_raw
+        FFT_final_full_raw = np.sqrt(FFT_real_full_raw**2 + FFT_imag_full_raw**2)
         FFT_real_full = FFT_intr_full.real*np.cos(np.angle(FFT_intr_full))
         FFT_imag_full = FFT_intr_full.imag*np.sin(np.angle(FFT_intr_full))
-        FFT_final_full = FFT_real_full + FFT_imag_full
+        FFT_final_full = np.sqrt(FFT_real_full**2 + FFT_imag_full**2)
     else:
         FFT_real_full = FFT_intr_full.real
         FFT_imag_full = FFT_intr_full.imag
-        FFT_final_full = FFT_real_full + FFT_imag_full
+        FFT_final_full = np.sqrt(FFT_real_full**2 + FFT_imag_full**2)
 
     # Trim according to calibrations
     freq_trim = freq[select]
