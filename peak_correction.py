@@ -130,7 +130,7 @@ def subtract_peaks(raw_data, peaks, reduce=[0.9]):
         try:
             r = reduce[i]
         except IndexError:
-            r = 0.95
+            r = 0
 
         raw_data[peak_info[0]:peak_info[1]] -= largest_peak_values * (r * raw_data[peak_info[2]] / largest_peak[3])
 
@@ -157,11 +157,11 @@ def DEBUG_add_peak(raw_data, existing_peaks, new_peaks):
 
 
 if __name__ == "__main__":
-    path = r"C:\Users\cfai2\Documents\src\Interferogram_FFT\20210615\105836"
+    path = r"C:\Users\cfai2\Documents\src\Interferogram_FFT\tests_for_gui\140402"
     
     # Start with this as FALSE to tune peak correction using integralTRPL
     # Switch to TRUE to generate a new MAP.txt once peaks have been identified
-    save_corrected_map = True
+    save_corrected_map = False
     
     # Need to background subtract first
     BKGsub = True           
@@ -194,7 +194,9 @@ if __name__ == "__main__":
         
     integralTRPL = np.sum(map_data,axis=0)
     # Ensure that the arguments of find_peaks are finding the peaks correctly first
-    peaks = find_peaks(integralTRPL, time_data)
+    peaks = find_peaks(integralTRPL, time_data, end_time=20,
+                       search_radius=4,peak_thr=1.2,
+                       peak_radius=20)
         
     #Plot Full TRPL
     plt.figure(4, dpi=120)
@@ -213,7 +215,7 @@ if __name__ == "__main__":
         
     # Tune the reduction factors after tuning find_peaks()
     # These generally reqiure the most tuning
-    reduce_factors = [0.55, 0.9]
+    reduce_factors = [0.5, 0, 0,0,0]
     subtract_peaks(integralTRPL, peaks, reduce=reduce_factors)
     
     plt.figure(6, dpi=120)
