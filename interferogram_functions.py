@@ -163,15 +163,15 @@ def FFT_intr(preFFT_pos,preFFT_data, plots=False,correct=True,scale="linear"):
         #Phase Corrected
         FFT_real_full_raw = FFT_intr_full.real
         FFT_imag_full_raw = FFT_intr_full.imag
-        FFT_final_full_raw = np.sqrt(FFT_real_full_raw**2 + FFT_imag_full_raw**2)
-        FFT_real_full = FFT_intr_full.real*np.cos(np.angle(FFT_intr_full))
-        FFT_imag_full = FFT_intr_full.imag*np.sin(np.angle(FFT_intr_full))
-        FFT_final_full = np.sqrt(FFT_real_full**2 + FFT_imag_full**2)
+        phase_angle = np.arctan(FFT_imag_full_raw / FFT_real_full_raw)
+        FFT_phase_corrected_full = FFT_intr_full*np.exp(-1j*phase_angle)
+        FFT_final_full = FFT_phase_corrected_full.real
+        
     else:
-        FFT_real_full = FFT_intr_full.real
-        FFT_imag_full = FFT_intr_full.imag
-        FFT_final_full = np.sqrt(FFT_real_full**2 + FFT_imag_full**2)
-
+        FFT_real_full_raw = FFT_intr_full.real
+        FFT_imag_full_raw = FFT_intr_full.imag
+        FFT_final_full = np.sqrt(FFT_real_full_raw**2 + FFT_imag_full_raw**2)
+        
     # Trim according to calibrations
     freq_trim = freq[select]
     FFT_intr_trim_full = FFT_final_full[select]
@@ -182,31 +182,21 @@ def FFT_intr(preFFT_pos,preFFT_data, plots=False,correct=True,scale="linear"):
     #Plot
     if plots:
         if correct:
-            FFT_real_raw = FFT_real_full_raw[select]
-            FFT_imag_raw = FFT_imag_full_raw[select]
-            FFT_intr_raw = FFT_final_full_raw[select]
-            plt.figure(0, dpi=120)
-            plt.plot(wave,FFT_intr_raw,"--",label="Full")
-            plt.plot(wave,FFT_real_raw,label="Real")
-            plt.plot(wave,FFT_imag_raw,label="Imag")
-            plt.yscale(scale)
-            plt.title("Raw FFT")
-            plt.xlabel("Wavelength (nm)")
-            plt.legend()
-
-        FFT_real = FFT_real_full[select]
-        FFT_imag = FFT_imag_full[select]
-
-        plt.figure(1, dpi=120)
-        plt.plot(wave,FFT_intr_trim_full,"--",label="Full")
-        plt.plot(wave,FFT_real,label="Real")
-        plt.plot(wave,FFT_imag,label="Imag")
-        plt.yscale(scale)
-        if correct:
-            plt.title("Phase Corrected FFT")
+            title = "Phase Corrected FFT"
         else:
-            plt.title("Raw FFT")
+            title = "FFT"
+        FFT_real_raw = FFT_real_full_raw[select]
+        FFT_imag_raw = FFT_imag_full_raw[select]
+        plt.figure(0, dpi=120)
+        plt.plot(wave,FFT_intr_trim_full,"--",label="Full")
+        plt.plot(wave,FFT_real_raw,label="Real")
+        plt.plot(wave,FFT_imag_raw,label="Imag")
+        plt.yscale(scale)
+        plt.title(title)
         plt.xlabel("Wavelength (nm)")
+        #plt.xlim((475,700))
+        plt.grid()
+        #plt.xticks(np.arange(475,701,25))
         plt.legend()
 
     return wave, FFT_intr_trim_full.reshape((1,len(FFT_intr_trim_full)))[0]
