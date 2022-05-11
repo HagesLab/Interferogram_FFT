@@ -4,31 +4,34 @@ Created on Mon Nov 30 11:37:33 2020
 @author: Chuck
 """
 
-from interferogram_functions import prep_interferogram,  FFT_intr, import_MAP
+from interferogram_functions import prep_interferogram, prep_map, FFT_intr, FFT_map, import_MAP
+from make_norm_spec import load_spectrum, interp
 import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
 import numpy as np
 from numpy import savetxt
 import os
 
-path = r"C:\Users\c.hages\Dropbox (UFL)\UF\TRPL Computer\Tao\20210701\135216"
-save_params = True          #Use this to create a txt file that can be imported into the "..._MAP_script"
-save_PL = True             # Save a .csv of wavelength/PL datasets - one PL per apodization
-save_TRPL = True             # Save a .csv of the avereraged Time/PL dataset
+path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220509\170820"
+save_params = 1          #Use this to create a txt file that can be imported into the "..._MAP_script"
+save_PL = 1             # Save a .csv of wavelength/PL datasets - one PL per apodization
+save_TRPL = 1            # Save a .csv of the avereraged Time/PL dataset
 
+transfer_func = True     # Normalize by a transfer function specific to the optical path
 BKGsub = True               #Background Subtract - Generally True
 bkg_limit = -3              #ns before the TRPL peak to average the background data up to - see plot
-start_wave = 250           #For Plotting
-end_wave = 1700             #For Plotting
+start_wave = 550           #For Plotting
+end_wave = 800             #For Plotting
 pltzoomstate = False        #Zoom in around the zero position in interferogram to better observe oscillations
 pltzoomrange = [-.25,.25]   #Range to zoom in on if pltzoomstate=True
 
-apodization_width=[0.4]     #Bounds (negative to positive) outside of which the data = 0, should be a list. Use many values in the list to compare Apod widths. It will only save the first value in metadata for MAP_script!
+apodization_width=[0.5]     #Bounds (negative to positive) outside of which the data = 0, should be a list. Use many values in the list to compare Apod widths. It will only save the first value in metadata for MAP_script!
 apod_type="BH"              #Function to use for apodization: "None" "Gauss" "Triangle" "Boxcar" or "BH" (Default)
 resample = True             #Enhance resolution by cubic interpolation
 resample_factor=4           #Factor to increase data points by
 shift= False                #Shift max value to be at 0 mm position - not sure it matters
 pad_test = True             #Pad the data with zeros to enhance FFT resolution
-padfactor = 14              #Total points will be filled with zeros untill 2**padfactor  -> 2**15 = 32k (default), 2**16=65k
+padfactor = 15              #Total points will be filled with zeros untill 2**padfactor  -> 2**15 = 32k (default), 2**16=65k
 baseline_sub_state = False   #Perform IModPoly baseline subtraction if not a linear baseline (poly = 1)
 mean_sub = True             #Shift the average value of the interferogram to be zero
 plots = True               #Deactivate plots from FFT and prep - useful if using more than one apod width to compare.
@@ -56,28 +59,67 @@ plt.xlim(right=2)
 plt.yscale('log')
 
 #New Time Averaged data from MAP
-index=(np.abs(time_data)).argmin()
-#AVG_map_data = np.mean(map_data,axis=1)
-AVG_map_data = map_data[:,index]
+# index=(np.abs(time_data)).argmin()
+# AVG_map_data = map_data[:,index]
 
+AVG_map_data = np.sum(map_data,axis=1)
+
+if transfer_func:
+    norm_fname = "cuvet_norm_0.txt"
+    norm_waves, norm = load_spectrum(norm_fname)
+    
+    # Truncate
+    norm_waves, norm = interp(norm_waves, norm, start_wave, end_wave, 1)
 
 wave_list, FFT_intr_trim_list = [], []
 for i in range(len(apodization_width)):
     preFFT_pos, preFFT_data, shiftfactor, baseline_fit = prep_interferogram(pos_data,AVG_map_data,apodization_width[i],apod_type=apod_type,resample=resample,resample_factor=resample_factor,shift=shift,pad_test=pad_test,padfactor=padfactor,mean_sub=mean_sub,plots=plots,pltzoom=pltzoomstate,zoom_range=pltzoomrange,baseline_sub_state=baseline_sub_state)
-    wave, FFT_intr_trim = FFT_intr(preFFT_pos,preFFT_data,plots=True,scale="linear",correct=True)
-    wave_list.append(wave)
+    wave, FFT_intr_trim = FFT_intr(preFFT_pos,preFFT_data,plots=True,scale="linear",correct=False)
+    
+    if transfer_func:
+        wave, FFT_intr_trim = interp(wave, FFT_intr_trim, start_wave, end_wave, 1)
+        FFT_intr_trim /= norm
+        
+        wave_list.append(norm_waves)
+    else:
+        wave_list.append(wave)
+        
     FFT_intr_trim_list.append(FFT_intr_trim)
 
+if transfer_func:
+    print("bruh")
+    preFFT_pos, preFFT_map = prep_map(pos_data,map_data,apodization_width[0],apod_type,resample,resample_factor,shift,pad_test,padfactor,mean_sub)
+    FFT_wave, FFT_map = FFT_map(preFFT_pos, preFFT_map)
+    FFT_wave=FFT_wave[::-1]
+    FFT_map = np.fliplr(np.array(FFT_map,dtype="float").T)
+    
+    FFT_wave, FFT_map = interp(FFT_wave, FFT_map.T, start_wave, end_wave, 1)
+    
+    FFT_map = (FFT_map.T / norm).T
+      
+    integralTRPL = np.sum(FFT_map, axis=0) 
+    if BKGsub:
+        index = [(np.abs(time_data-np.min(BKGrange))).argmin(),(np.abs(time_data-np.max(BKGrange))).argmin()]
+        BKGval = np.mean(integralTRPL[np.min(index):np.max(index)])
+        integralTRPL = integralTRPL - BKGval
+        
+        
+     
+    
+else:
+    integralTRPL = np.sum(map_data,axis=0)
 
 #Plot Full TRPL
-integralTRPL = np.sum(map_data,axis=0)
 plt.figure(4, dpi=120)
 plt.plot(time_data,integralTRPL)
 plt.ylim(np.max(integralTRPL)*TRPLmin_OM,2*np.max(integralTRPL))
-#plt.xlabel('Time / ns')
-#plt.ylabel('Counts / a.u.')
-#plt.title("Integral TRPL")
+plt.xlabel('Time / ns')
+plt.ylabel('Counts / a.u.')
+plt.title("Integral TRPL")
 plt.yscale('log')
+if save_params:
+    PLname = path + "\\" + os.path.split(path)[-1] + '_TRPLPlot.png'
+    plt.savefig(PLname)
 
 #Plot Full PL
 plt.figure(5, dpi=120)

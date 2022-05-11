@@ -172,6 +172,7 @@ def FFT_intr(preFFT_pos,preFFT_data, plots=False,correct=True,scale="linear"):
         FFT_imag_full_raw = FFT_intr_full.imag
         FFT_final_full = np.sqrt(FFT_real_full_raw**2 + FFT_imag_full_raw**2)
         
+    
     # Trim according to calibrations
     freq_trim = freq[select]
     FFT_intr_trim_full = FFT_final_full[select]
@@ -282,15 +283,16 @@ def prep_map(pos_data,map_data,apodization_width,apod_type="BH",resample=True,re
         preFFT_data, preFFT_pos = np.concatenate((right_axis_intr,left_axis_intr)), np.concatenate((right_axis_pos,left_axis_pos))
         prep_build.append(preFFT_data)
 
-    return preFFT_pos, np.array(prep_build,dtype='float').T
+    prep_build = np.array(prep_build, dtype='float').T
+    return preFFT_pos, prep_build
 
-def FFT_map(preFFT_pos,preFFT_data, plots=False,correct=True,scale="linear"):
+def FFT_map(FFT_pos,FFT_data, plots=False,correct=False,scale="linear"):
     # Treat single TS 1D case as 2D case
-    if preFFT_data.ndim == 1:
-        preFFT_data = preFFT_data.reshape((len(preFFT_data),1))
+    if FFT_data.ndim == 1:
+        FFT_data = FFT_data.reshape((len(FFT_data),1))
 
     #Do as much preparation outside of the loop over preFFT_data's timesteps as possible
-    freq = np.fft.rfftfreq(preFFT_pos.shape[-1],np.diff(preFFT_pos)[0])
+    freq = np.fft.rfftfreq(FFT_pos.shape[-1],np.diff(FFT_pos)[0])
 
     #Import calibration for WL
     items = os.listdir(".")
@@ -310,24 +312,25 @@ def FFT_map(preFFT_pos,preFFT_data, plots=False,correct=True,scale="linear"):
     fn = interp1d(reciprocal, wavelength, kind="linear")
 
     # Do FFT on the data
-    FFT_intr_full = np.fft.rfft(preFFT_data, axis=0)
+    FFT_data = np.fft.rfft(FFT_data, axis=0)
 
     if correct:
         #Phase Corrected
-        FFT_real_full_raw = FFT_intr_full.real
-        FFT_imag_full_raw = FFT_intr_full.imag
-        FFT_final_full_raw = np.sqrt(FFT_real_full_raw**2 + FFT_imag_full_raw**2)
-        FFT_real_full = FFT_intr_full.real*np.cos(np.angle(FFT_intr_full))
-        FFT_imag_full = FFT_intr_full.imag*np.sin(np.angle(FFT_intr_full))
+        # FIXME: this should match FFT_intr
+        # FFT_real_full_raw = FFT_data.real
+        # FFT_imag_full_raw = FFT_data.imag
+        # FFT_final_full_raw = np.sqrt(FFT_real_full_raw**2 + FFT_imag_full_raw**2)
+        FFT_real_full = FFT_data.real*np.cos(np.angle(FFT_data))
+        FFT_imag_full = FFT_data.imag*np.sin(np.angle(FFT_data))
         FFT_final_full = np.sqrt(FFT_real_full**2 + FFT_imag_full**2)
     else:
-        FFT_real_full = FFT_intr_full.real
-        FFT_imag_full = FFT_intr_full.imag
-        FFT_final_full = np.sqrt(FFT_real_full**2 + FFT_imag_full**2)
+        #FFT_data = np.sqrt(FFT_data.real**2 + FFT_data.imag**2)
+        FFT_data = np.abs(FFT_data) # equivalent to real^2+imag^2
+        
 
     # Trim according to calibrations
     freq_trim = freq[select]
-    FFT_intr_trim_full = FFT_final_full[select]
+    #FFT_intr_trim_full = FFT_data[select]
 
     #Compute WL
     wave = fn(freq_trim)
@@ -347,13 +350,13 @@ def FFT_map(preFFT_pos,preFFT_data, plots=False,correct=True,scale="linear"):
             plt.xlabel("Wavelength (nm)")
             plt.legend()
 
-        FFT_real = FFT_real_full[select]
-        FFT_imag = FFT_imag_full[select]
+        # FFT_real = FFT_data.real[select]
+        # FFT_imag = FFT_data.imag[select]
 
         plt.figure(1, dpi=120)
-        plt.plot(wave,FFT_intr_trim_full,"--",label="Full")
-        plt.plot(wave,FFT_real,label="Real")
-        plt.plot(wave,FFT_imag,label="Imag")
+        plt.plot(wave,FFT_data[select],"--",label="Full")
+        plt.plot(wave,FFT_data.real[select],label="Real")
+        plt.plot(wave,FFT_data.imag[select],label="Imag")
         plt.yscale(scale)
         if correct:
             plt.title("Phase Corrected FFT")
@@ -362,7 +365,7 @@ def FFT_map(preFFT_pos,preFFT_data, plots=False,correct=True,scale="linear"):
         plt.xlabel("Wavelength (nm)")
         plt.legend()
 
-    return wave, FFT_intr_trim_full
+    return wave, FFT_data[select]
 
 
 def fetch_metadata(dir_name,openfile):  #  "{}\\Param_Import_metadata.txt"  or "{}\\Plot_Params.txt"

@@ -5,6 +5,7 @@ Created on Sat Oct 24 23:08:58 2020
 @author: Chuck
 """
 from interferogram_functions import FFT_map, import_MAP, prep_map, fetch_metadata, Fit_1exp
+from make_norm_spec import interp, load_spectrum
 import matplotlib.pyplot as plt
 import numpy as np
 import time
@@ -15,7 +16,7 @@ from matplotlib.ticker import LogLocator
 from scipy import ndimage
 import ast
 
-path = r"C:\Users\c.hages\Dropbox (UFL)\UF\TRPL Computer\Tao\20210701\135216"
+path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220509\170820"
 params_from_INTR_metadata = True        #Import metadata from "...Averaged_MAP..." script - if not using this there may be bugs.
 save_data = True                        #Save all plots and TRES data
 ImportTRES = False                       #Use this to prevent recalcualting the FFT - must have "..TRES.h5" already savded
@@ -34,14 +35,14 @@ intrfxlims = "Full"   #if == "Full" no restriction, full data. Otherwise define 
 # If not importing params from metadata:
 # =============================================================================
 
-apodization_width=0.75
-apod_type="None"    # "None" "Gauss" "Triangle" "Boxcar" "BH"
+apodization_width=0.5
+apod_type="BH"    # "None" "Gauss" "Triangle" "Boxcar" "BH"
 resample=True
 resample_factor=4
 shift=False
 pad_test=True
-padfactor=15
-mean_sub = False
+padfactor=16
+mean_sub = True
 baseline_sub_state = False
 BKGsub = True
 bkg_limit = -3  #ns  Before t_max
@@ -54,7 +55,7 @@ shift_factor = 0.005837467299965371       #Hard to compute shift on time-resolve
 
 #All Plots
 timeRange = [-10,60]
-PLRange = [610.,1050.]
+PLRange = [550.,800.]
 
 #TRES
 min_value = 50
@@ -67,8 +68,10 @@ rangevalPL = [[0,1],[4,20]]  #ns
 NormPL = False
 
 #TRPL Plot
-Usemapdata= True      #To maximize TRPL decay
-AverageTRPL = True                     #Only if not using mapdata
+Usemapdata= False      #To maximize TRPL decay
+transfer_func = True # Only if not using mapdata
+norm_fname = "cuvet_norm_0.txt"
+AverageTRPL = False                     #Only if not using mapdata
 rangevalTRPL = [[650,670]]  #nm    #Only if not using mapdata
 NormTRPL = False
 BKGTRPL = True
@@ -174,11 +177,13 @@ else:
     build_TRES=np.fliplr(np.array(build_TRES,dtype="float").T)
     print("Took {} sec".format(time.time() - startTime))
 
-
-
-
-
-
+    if transfer_func:
+        norm_waves, norm_data = load_spectrum(norm_fname)
+        norm_waves, norm_data = interp(norm_waves, norm_data, PLRange[0], PLRange[1], 1)
+        wave, build_TRES = interp(wave, build_TRES.T, PLRange[0], PLRange[1], 1)
+        build_TRES = (build_TRES.T / norm_data).T
+        build_TRES = build_TRES.T
+        
 
 
 # Plot the results (TRES)
@@ -189,6 +194,7 @@ tplot=time_data[indext[0]:indext[1]]
 
 timemesh, wavemesh = np.meshgrid(WLPlot,tplot)
 TRESplot=build_TRES[indext[0]:indext[1],indexWL[0]:indexWL[1]]
+min_value = np.amin(TRESplot)
 TRESplot = np.where(TRESplot<min_value,min_value,TRESplot)
 
 fig = plt.figure(2,dpi=120)
@@ -214,12 +220,13 @@ if AveragePL:
             newarr = (newarr-newarr.min())/(newarr.max()-newarr.min())
         plot_TRES[i] = newarr
 else:
-    plot_TRES = np.mean(build_TRES,axis=0)
+    plot_TRES = np.sum(build_TRES,axis=0)
     if NormPL:
         plot_TRES = (plot_TRES-plot_TRES.min())/(plot_TRES.max()-plot_TRES.min())
 
 plt.figure(3, dpi=120)
 plt.xlim(min(PLRange),max(PLRange))
+plt.title("Average PL")
 plt.ylabel('Counts / a.u.')
 plt.xlabel('Wavelength / nm')
 plt.yscale('linear')
@@ -240,6 +247,8 @@ if Usemapdata:
     AverageTRPL=False
 else:
     AVGTRPL = build_TRES
+    
+
 
 if AverageTRPL:
     integralTRPL = np.empty([len(rangevalTRPL),len(time_data)])
