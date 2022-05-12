@@ -62,10 +62,29 @@ def make_norm_spec(lamp_fname, resp_fname, norm_fname=None, show=True):
         
     if show:
         vis(resp_waves, resp_data, "Observed intensity (cts)")
-        vis(resp_waves, lamp_data, "Avantes known intensity (W/cm^2 nm)")
+        vis(resp_waves, lamp_data, "Known intensity (W/cm^2 nm)")
         vis(resp_waves, norm, "Transfer function")
         
     return resp_waves, norm, lamp_data, resp_data
+
+def apply_norm_spec(norm_fname, data_fname, data_oname=None, show=True):
+    norm_waves, norm = load_spectrum(norm_fname)
+    data_waves, data = load_spectrum(data_fname)
+    
+    norm_waves, norm = interp(norm_waves, norm, min_w, max_w, 1)
+    data_waves, data = interp(data_waves, data, min_w, max_w, 1)
+    
+    actual = data / norm
+    
+    if data_oname is not None:
+        np.savetxt(data_oname, np.array([norm_waves, actual]).T, delimiter='\t')
+    
+    if show:
+        vis(norm_waves, data, "Observed intensity (cts)")
+        vis(norm_waves, actual, "Corrected intensity (W/cm^2 nm)")
+        vis(norm_waves, norm, "Transfer function")
+        
+    
 
 if __name__ == "__main__":
     min_w = 550
@@ -88,22 +107,7 @@ if __name__ == "__main__":
         make_norm_spec(lamp_fname, resp_fname, norm_fname, show=True)
         
     elif mode == "a":
-        norm_waves, norm = load_spectrum(norm_fname)
+        apply_norm_spec(norm_fname, data_fname, data_oname, show=True)
         
-        
-        
-        data_waves, data = load_spectrum(data_fname)
-        
-        norm_waves, norm = interp(norm_waves, norm, min_w, max_w, 1)
-        data_waves, data = interp(data_waves, data, min_w, max_w, 1)
-        
-        actual = data / norm
-        
-        vis(norm_waves, data, "Observed intensity (cts)")
-        vis(norm_waves, actual, "Corrected intensity (W/cm^2 nm)")
-        vis(norm_waves, norm, "Transfer function")
-        
-        np.savetxt(data_oname, np.array([norm_waves, actual]).T, delimiter='\t')
-    
     else:
         raise ValueError("set mode to m (make a new norm_spec) or a (apply a previously created norm_spec)")
