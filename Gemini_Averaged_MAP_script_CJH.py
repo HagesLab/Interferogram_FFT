@@ -6,6 +6,7 @@ Created on Mon Nov 30 11:37:33 2020
 
 from interferogram_functions import prep_interferogram, prep_map, FFT_intr, FFT_map
 from interferogram_io import save_metadata, save_PL, import_MAP
+from interferogram_vis import plot_PL_spectrum, plot_TRPL_decay
 from make_norm_spec import load_spectrum, interp
 from scipy.integrate import simpson
 import matplotlib.pyplot as plt
@@ -14,7 +15,7 @@ import numpy as np
 from numpy import savetxt
 import os
 
-path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220512\122427"
+path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220512\150059"
 save_params = 1          #Use this to create a txt file that can be imported into the "..._MAP_script"
 export_PL = 1            # Save a .csv of wavelength/PL datasets - one PL per apodization
 save_TRPL = 1            # Save a .csv of the avereraged Time/PL dataset
@@ -111,38 +112,18 @@ if transfer_func:
         BKGval = np.mean(integralTRPL[np.min(index):np.max(index)])
         integralTRPL = integralTRPL - BKGval
         
-        
-     
-    
+            
 else:
     integralTRPL = np.sum(map_data,axis=0)
 
 #Plot Full TRPL
-plt.figure(4, dpi=120)
-plt.plot(time_data,integralTRPL)
-plt.ylim(np.max(integralTRPL)*TRPLmin_OM,2*np.max(integralTRPL))
-plt.xlabel('Time / ns')
-plt.ylabel('Counts / a.u.')
-plt.title("Integral TRPL")
-plt.yscale('log')
-if save_params:
-    PLname = path + "\\" + os.path.split(path)[-1] + '_TRPLPlot.png'
-    plt.savefig(PLname)
+PLname = os.path.join(path, '{}_TRPLPlot.png'.format(exper_ID))
+plot_TRPL_decay(time_data, integralTRPL, TRPLmin_OM, PLname)
 
 #Plot Full PL
-plt.figure(5, dpi=120)
-plt.ylabel("Counts / a.u.")
-plt.xlabel("Wavelength / nm")
-plt.title("Average PL")
-for i in range(len(wave_list)):
-    plt.plot(wave_list[i],FFT_intr_trim_list[i],label=apod_type+' Apod '+str(apodization_width[i])+' mm')
-plt.xlim(start_wave,end_wave)
-plt.yscale('linear')
-if save_params:
-    PLname = path + "\\" + os.path.split(path)[-1] + '_PLPlot.png'
-    plt.savefig(PLname)
-if len(apodization_width) > 1:
-    plt.legend()
+PLname = os.path.join(path, '{}_PLPlot.png'.format(exper_ID))
+labels = ['{} Apod {} mm'.format(apod_type, apod) for apod in apodization_width]
+plot_PL_spectrum(wave_list, FFT_intr_trim_list, labels, start_wave, end_wave, export=PLname)
 
 if export_PL:
     PL_fname = os.path.join(path, '{}_PLdata.csv'.format(exper_ID))

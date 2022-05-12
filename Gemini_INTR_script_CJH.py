@@ -8,6 +8,7 @@ Created on Mon Nov 30 11:37:33 2020
 # New version: FFT fixed
 from interferogram_functions import prep_interferogram,  FFT_intr
 from interferogram_io import save_metadata, save_PL, import_INTR
+from interferogram_vis import plot_PL_spectrum
 import matplotlib.pyplot as plt
 import os
 import numpy as np
@@ -45,23 +46,15 @@ pos_data, intr_data = import_INTR(path)
 
 wave_list, FFT_intr_trim_list = [], []
 for i in range(len(apodization_width)):
-    
     preFFT_pos, preFFT_data, shiftfactor, baseline_fit = prep_interferogram(pos_data,intr_data,apodization_width[i],apod_type=apod_type,resample=resample,resample_factor=resample_factor,shift=shift,pad_test=pad_test,padfactor=padfactor,mean_sub=mean_sub,plots=plots,pltzoom=pltzoomstate,zoom_range=pltzoomrange,baseline_sub_state=baseline_sub_state)
     wave, FFT_intr_trim = FFT_intr(preFFT_pos,preFFT_data,plots=True,scale="linear",correct=False)
     wave_list.append(wave)
     FFT_intr_trim_list.append(FFT_intr_trim)
 
 #Plot Full PL
-plt.figure(5, dpi=120)
-plt.ylabel("Counts / a.u.")
-plt.xlabel("Wavelength / nm")
-plt.title("Average PL")
-plt.grid()
-#plt.xticks(np.arange(start_wave,end_wave+1,25))
-for i in range(len(wave_list)):
-    plt.plot(wave_list[i],FFT_intr_trim_list[i],label=apod_type+' Apod '+str(apodization_width[i])+' mm')
-plt.xlim(start_wave,end_wave)
-plt.yscale('linear')
+PLname = os.path.join(path, '{}_PLPlot.png'.format(exper_ID))
+labels = ['{} Apod {} mm'.format(apod_type, apod) for apod in apodization_width]
+plot_PL_spectrum(wave_list, FFT_intr_trim_list, labels, start_wave, end_wave, export=PLname)
 
 ##### The Raman Zone #####
 # def wl_to_raman(wl_exc, wl):
@@ -85,12 +78,6 @@ plt.yscale('linear')
 # plt.yscale('linear')
 # plt.ylim(0, 5e5)
 ##########################
-
-if save_params:
-    PLname = path + "\\" + os.path.split(path)[-1] + '_PLPlot.png'
-    plt.savefig(PLname)
-if len(apodization_width) > 1:
-    plt.legend()
 
 if export_PL:
     PL_fname = os.path.join(path, '{}_PLdata.csv'.format(exper_ID))

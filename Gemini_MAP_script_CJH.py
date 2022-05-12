@@ -6,6 +6,7 @@ Created on Sat Oct 24 23:08:58 2020
 """
 from interferogram_functions import FFT_map, prep_map, Fit_1exp
 from interferogram_io import fetch_metadata, import_MAP
+from interferogram_vis import plot_PL_spectrum, plot_TRPL_decay
 from make_norm_spec import interp, load_spectrum
 import matplotlib.pyplot as plt
 import numpy as np
@@ -18,7 +19,7 @@ from scipy import ndimage
 from scipy.integrate import simpson
 import ast
 
-path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220512\122427"
+path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220512\150059"
 params_from_INTR_metadata = True        #Import metadata from "...Averaged_MAP..." script - if not using this there may be bugs.
 save_data = True                        #Save all plots and TRES data
 ImportTRES = False                       #Use this to prevent recalcualting the FFT - must have "..TRES.h5" already savded
@@ -65,7 +66,7 @@ Gauss_Filter = True
 sigmaval = 2   #For Gauss Filter
 
 #PL Plot
-AveragePL = False
+AveragePL = True
 rangevalPL = [[0,1],[4,20]]  #ns
 NormPL = False
 
@@ -73,7 +74,8 @@ NormPL = False
 Usemapdata= False      #To maximize TRPL decay - does the same as the Averaged_MAP script
 transfer_func = True # Only if not using mapdata
 norm_fname = "cuvet_norm_0.txt"
-AverageTRPL = False                     #Only if not using mapdata
+
+AverageTRPL = True                     #Only if not using mapdata
 rangevalTRPL = [[650,670]]  #nm    #Only if not using mapdata
 NormTRPL = False
 BKGTRPL = True
@@ -228,21 +230,10 @@ else:
     if NormPL:
         plot_TRES = (plot_TRES-plot_TRES.min())/(plot_TRES.max()-plot_TRES.min())
 
-plt.figure(3, dpi=120)
-plt.xlim(min(PLRange),max(PLRange))
-plt.title("Average PL")
-plt.ylabel('Counts / a.u.')
-plt.xlabel('Wavelength / nm')
-plt.yscale('linear')
-if AveragePL:
-    for i in range(len(plot_TRES)):
-        plt.plot(wave,plot_TRES[i],label=str(min(rangevalPL[i])) + " to " + str(max(rangevalPL[i])) + " ns")
-    plt.legend()
-else:
-    plt.plot(wave,plot_TRES)
-if save_data:
-    PLname = path + "\\" + os.path.split(path)[-1] + '_PLPlot.png'
-    plt.savefig(PLname)
+
+PLname = os.path.join(path, '{}_PLPlot.png'.format(exper_ID))
+labels = ["{} to {} ns".format(min(PL_range), max(PL_range)) for PL_range in rangevalPL]
+plot_PL_spectrum(wave, plot_TRES, labels, PLRange[0], PLRange[1], export=PLname)
 
 
 #Plot integral TRPL decay over given range
@@ -262,7 +253,7 @@ if AverageTRPL:
         if Usemapdata:
             TRPLarray = np.sum(AVGTRPL[:,np.min(index):np.max(index)], axis=1)
         else:
-            TRPLarray = simpson(AVGTRPL[:,np.min(index):np.max(index)], x=wave, axis=1)
+            TRPLarray = simpson(AVGTRPL[:,np.min(index):np.max(index)], x=wave[np.min(index):np.max(index)], axis=1)
             
         if NormTRPL:
             TRPLarray = TRPLarray/TRPLarray.max()
@@ -285,26 +276,14 @@ else:
         integralTRPL = integralTRPL - BKGval
 
 
-
-
-plt.figure(4, dpi=120)
-plt.title("Integral TRPL")
-plt.xlabel('Time / ns')
-plt.ylabel('Counts / a.u.')
-plt.yscale('log')
-plt.ylim(np.max(integralTRPL)*TRPLmin_OM,2*np.max(integralTRPL))
-plt.xlim(min(timeRange),max(timeRange))
+PLname = os.path.join(path, '{}_TRPLPlot.png'.format(exper_ID))
+labels = ["{} to {} nm".format(min(PL_range), max(PL_range)) for PL_range in rangevalTRPL]
 if overrideTRPLrange:
-    plt.xlim(min(overidexrange),max(overidexrange))
-if AverageTRPL:
-    for i in range(len(integralTRPL)):
-        plt.plot(time_data,integralTRPL[i],label=str(min(np.array(rangevalTRPL[i],dtype='int16'))) + " to " + str(max(np.array(rangevalTRPL[i],dtype='int16'))) + " nm")
-        plt.legend()
+    start_time, end_time = overidexrange[0], overidexrange[1]
 else:
-    plt.plot(time_data,integralTRPL)
-if save_data:
-    TRPLname = path + "\\" + os.path.split(path)[-1] + '_TRPLPlot.png'
-    plt.savefig(TRPLname)
+    start_time, end_time = timeRange[0], timeRange[1]
+plot_TRPL_decay(time_data, integralTRPL, TRPLmin_OM, labels=labels, 
+                start_time=start_time, end_time=end_time, export=PLname)
 
 if FitTRPL:
     if AverageTRPL:
