@@ -76,7 +76,7 @@ transfer_func = True # Only if not using mapdata
 norm_fname = "cuvet_norm_0.txt"
 
 AverageTRPL = True                     #Only if not using mapdata
-rangevalTRPL = [[650,670]]  #nm    #Only if not using mapdata
+rangevalTRPL = [[650,670], [660,680]]  #nm    #Only if not using mapdata
 NormTRPL = False
 BKGTRPL = True
 TRPLmin_OM = 1e-4
@@ -85,7 +85,7 @@ overidexrange = [-10,1000]    #Only if overriding range
 
 #Fitting TRPL
 FitTRPL = True
-fit_range = [[5,12]]   #List length must match the number of TRPL curves (line 64) / if mapdata then length 1
+fit_range = [[5,12], [5,12]]   #List length must match that of rangeValTRPL / if mapdata then length 1
 fit_on_TRES = True
 
 #Composite TRES
@@ -300,26 +300,20 @@ if FitTRPL:
         TRPL_fit, time_fit, fit_label, popt, perr = Fit_1exp(integralTRPL,time_data,fit_range[0])
 
 if FitTRPL:
-    plt.figure(5, dpi=120)
-    plt.title("Integral TRPL")
-    plt.xlabel('Time / ns')
-    plt.ylabel('Counts / a.u.')
-    plt.yscale('log')
-    plt.ylim(np.max(integralTRPL)*TRPLmin_OM,2*np.max(integralTRPL))
-    plt.xlim(min(timeRange),max(timeRange))
-    if overrideTRPLrange:
-        plt.xlim(min(overidexrange),max(overidexrange))
+    TRPLFitname = os.path.join(path, '{}_TRPLFitPlot.png'.format(exper_ID))
     if AverageTRPL:
-        for i in range(len(integralTRPL)):
-            plt.plot(time_data,integralTRPL[i],label=str(min(np.array(rangevalTRPL[i],dtype='int16'))) + " to " + str(max(np.array(rangevalTRPL[i],dtype='int16'))) + " nm")
-            plt.plot(np.array(time_fit_list[i]),np.array(TRPL_fit_list[i]),'k--',label = ''.join(fit_label_list[i]))
+        fit = (time_fit_list, TRPL_fit_list, fit_label_list)
     else:
-        plt.plot(time_data,integralTRPL)
-        plt.plot(time_fit,TRPL_fit,'k--',label = fit_label)
-    plt.legend()
-    if save_data:
-        TRPLFitname = path + "\\" + os.path.split(path)[-1] + '_TRPLFitPlot.png'
-        plt.savefig(TRPLFitname)
+        fit = (time_fit, TRPL_fit, fit_label)
+        
+    labels = ["{} to {} nm".format(min(PL_range), max(PL_range)) for PL_range in rangevalTRPL]
+    if overrideTRPLrange:
+        start_time, end_time = overidexrange[0], overidexrange[1]
+    else:
+        start_time, end_time = timeRange[0], timeRange[1]
+    plot_TRPL_decay(time_data, integralTRPL, TRPLmin_OM, labels=labels, 
+                    start_time=start_time, end_time=end_time, fit=fit, export=TRPLFitname)
+    
 
 #Composite TRES
 fig = plt.figure(6,dpi=120)

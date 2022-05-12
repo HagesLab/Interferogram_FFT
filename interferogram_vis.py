@@ -35,14 +35,20 @@ def plot_PL_spectrum(waves, spectra, labels, start_wave, end_wave, export=None, 
     if export is not None:
         fig.savefig(export)
 
-def plot_TRPL_decay(times, trpl, min_OM, labels=None, start_time=None, end_time=None, export=None, interval=None):
+def plot_TRPL_decay(times, trpl, min_OM, labels=None, start_time=None, end_time=None, 
+                    fit=None, export=None, interval=None):
     fig, ax = plt.subplots(dpi=120)
     
     if isinstance(trpl, list) or (isinstance(trpl, np.ndarray) and trpl.ndim == 2):
         for i in range(len(trpl)):
             ax.plot(times,trpl[i],label=labels[i])
+            
+            if fit is not None:
+                ax.plot(fit[0][i], fit[1][i], 'k--', label=''.join(fit[2][i]))
     else:
          ax.plot(times,trpl)
+         if fit is not None:
+             ax.plot(fit[0], fit[1], 'k--', label=''.join(fit[2]))
          
     if start_time is not None and end_time is not None:
         ax.set_xlim((start_time, end_time))
