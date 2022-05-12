@@ -92,3 +92,12 @@ def save_PL(path, wave_list, apods, spectra_list):
         header.append("PL [counts] apod={}".format(apod))
     np.savetxt(path, data, delimiter=',', header=",".join(header))
     return
+
+def save_TRPL(path, time_data, trpl):
+    header = []
+    data = np.empty((len(time_data), 2))
+    data[:, 0] = time_data
+    data[:, 1] = trpl.flatten()
+    header.append("Time [ns]")
+    header.append("PL [counts]")
+    np.savetxt(path, data, delimiter=',', header=",".join(header))

@@ -5,7 +5,7 @@ Created on Mon Nov 30 11:37:33 2020
 """
 
 from interferogram_functions import prep_interferogram, prep_map, FFT_intr, FFT_map
-from interferogram_io import save_metadata, save_PL, import_MAP
+from interferogram_io import save_metadata, save_PL, save_TRPL, import_MAP
 from interferogram_vis import plot_PL_spectrum, plot_TRPL_decay
 from make_norm_spec import load_spectrum, interp
 from scipy.integrate import simpson
@@ -18,7 +18,7 @@ import os
 path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220512\150059"
 save_params = 1          #Use this to create a txt file that can be imported into the "..._MAP_script"
 export_PL = 1            # Save a .csv of wavelength/PL datasets - one PL per apodization
-save_TRPL = 1            # Save a .csv of the avereraged Time/PL dataset
+export_TRPL = 1            # Save a .csv of the avereraged Time/PL dataset
 
 transfer_func = True     # Normalize by a transfer function specific to the optical path
 BKGsub = True               #Background Subtract - Generally True
@@ -75,8 +75,6 @@ AVG_map_data = np.sum(map_data,axis=1)
 if transfer_func:
     norm_fname = "cuvet_norm_0.txt"
     norm_waves, norm = load_spectrum(norm_fname)
-    
-    # Truncate
     norm_waves, norm = interp(norm_waves, norm, start_wave, end_wave, 1)
 
 wave_list, FFT_intr_trim_list = [], []
@@ -129,15 +127,9 @@ if export_PL:
     PL_fname = os.path.join(path, '{}_PLdata.csv'.format(exper_ID))
     save_PL(PL_fname, wave_list, apodization_width, FFT_intr_trim_list)
 
-if save_TRPL:
-    header = []
-    outputfilename = path + "\\" + os.path.split(path)[-1] + '_TRPLdata.csv'
-    data = np.empty((len(time_data), 2))
-    data[:, 0] = time_data
-    data[:, 1] = integralTRPL.flatten()
-    header.append("Time [ns]")
-    header.append("PL [counts]")
-    np.savetxt(outputfilename, data, delimiter=',', header=",".join(header))
+if export_TRPL:
+    trpl_fname = os.path.join(path, '{}_TRPLdata.csv'.format(exper_ID))
+    save_TRPL(trpl_fname, time_data, integralTRPL)
 
 # Best to turn this on only when you have found the desired params
 if save_params:
