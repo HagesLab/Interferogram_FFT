@@ -5,7 +5,7 @@ Created on Mon Nov 30 11:37:33 2020
 """
 
 from interferogram_functions import prep_interferogram, prep_map, FFT_intr, FFT_map, import_MAP
-from interferogram_io import save_metadata
+from interferogram_io import save_metadata, save_PL
 from make_norm_spec import load_spectrum, interp
 from scipy.integrate import simpson
 import matplotlib.pyplot as plt
@@ -14,12 +14,12 @@ import numpy as np
 from numpy import savetxt
 import os
 
-path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220509\151642"
+path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220512\122427"
 save_params = 1          #Use this to create a txt file that can be imported into the "..._MAP_script"
-save_PL = 0            # Save a .csv of wavelength/PL datasets - one PL per apodization
-save_TRPL = 0            # Save a .csv of the avereraged Time/PL dataset
+export_PL = 1            # Save a .csv of wavelength/PL datasets - one PL per apodization
+save_TRPL = 1            # Save a .csv of the avereraged Time/PL dataset
 
-transfer_func = False     # Normalize by a transfer function specific to the optical path
+transfer_func = True     # Normalize by a transfer function specific to the optical path
 BKGsub = True               #Background Subtract - Generally True
 bkg_limit = -3              #ns before the TRPL peak to average the background data up to - see plot
 start_wave = 550           #For Plotting
@@ -94,7 +94,7 @@ for i in range(len(apodization_width)):
     FFT_intr_trim_list.append(FFT_intr_trim)
 
 if transfer_func:
-    print("bruh")
+    print("transfer")
     preFFT_pos, preFFT_map = prep_map(pos_data,map_data,apodization_width[0],apod_type,resample,resample_factor,shift,pad_test,padfactor,mean_sub)
     FFT_wave, FFT_map = FFT_map(preFFT_pos, preFFT_map)
     FFT_wave=FFT_wave[::-1]
@@ -144,16 +144,9 @@ if save_params:
 if len(apodization_width) > 1:
     plt.legend()
 
-if save_PL:
-    header = []
-    outputfilename = path + "\\" + os.path.split(path)[-1] + '_PLdata.csv'
-    data = np.empty((len(wave_list[0]), len(apodization_width) * 2))
-    for i, apod in enumerate(apodization_width):
-        data[:, 2*i] = wave_list[i]
-        data[:, 2*i+1] = FFT_intr_trim_list[i].flatten()
-        header.append("Wavelength [nm] apod={}".format(apod))
-        header.append("PL [counts] apod={}".format(apod))
-    np.savetxt(outputfilename, data, delimiter=',', header=",".join(header))
+if export_PL:
+    PL_fname = os.path.join(path, '{}_PLdata.csv'.format(exper_ID))
+    save_PL(PL_fname, wave_list, apodization_width, FFT_intr_trim_list)
 
 if save_TRPL:
     header = []
@@ -173,5 +166,5 @@ if save_params:
     
     save_metadata(outputfilename_meta, params, from_="Averaged MAP")
     if baseline_sub_state:
-        outputfilename_baseline = path + "\\" + os.path.split(path)[-1] + '_BaselineFit.txt'
+        outputfilename_baseline = os.path.join(path, '{}_BaselineFit.txt'.format(exper_ID))
         savetxt(outputfilename_baseline,baseline_fit,delimiter='  ')

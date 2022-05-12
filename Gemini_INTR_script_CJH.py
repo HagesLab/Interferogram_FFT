@@ -7,7 +7,7 @@ Created on Mon Nov 30 11:37:33 2020
 
 # New version: FFT fixed
 from interferogram_functions import prep_interferogram,  FFT_intr, import_INTR
-from interferogram_io import save_metadata
+from interferogram_io import save_metadata, save_PL
 import matplotlib.pyplot as plt
 import os
 import numpy as np
@@ -18,7 +18,7 @@ path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Mea
 # path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20211105/115108"
 #path = r"F:\PL\Tao\20211012\125809"
 save_params = True          #Use this to create a txt file that can be imported into the "..._MP_script" and export Plots
-save_PL = True             # Save a .csv of wavelength/PL datasets - one PL per apodization
+export_PL = True             # Save a .csv of wavelength/PL datasets - one PL per apodization
 
 start_wave =500           #For Plotting - keep in mind the LP filter value
 end_wave = 800             #For Plotting
@@ -92,16 +92,9 @@ if save_params:
 if len(apodization_width) > 1:
     plt.legend()
 
-if save_PL:
-    header = []
-    outputfilename = path + "\\" + os.path.split(path)[-1] + '_PLdata.csv'
-    data = np.empty((len(wave_list[0]), len(apodization_width) * 2))
-    for i, apod in enumerate(apodization_width):
-        data[:, 2*i] = wave_list[i]
-        data[:, 2*i+1] = FFT_intr_trim_list[i].flatten()
-        header.append("Wavelength [nm] apod={}".format(apod))
-        header.append("PL [counts] apod={}".format(apod))
-    np.savetxt(outputfilename, data, delimiter=',', header=",".join(header))
+if export_PL:
+    PL_fname = os.path.join(path, '{}_PLdata.csv'.format(exper_ID))
+    save_PL(PL_fname, wave_list, apodization_width, FFT_intr_trim_list)
 
 # Best to turn this on only when you have found the desired params
 if save_params:
@@ -112,5 +105,5 @@ if save_params:
     save_metadata(outputfilename_meta, params, from_="INTR")
 
     if baseline_sub_state:
-        outputfilename_baseline = path + "\\" + os.path.split(path)[-1] + '_BaselineFit.txt'
+        outputfilename_baseline = os.path.join(path, '{}_BaselineFit.txt'.format(exper_ID))
         savetxt(outputfilename_baseline,baseline_fit,delimiter='  ')

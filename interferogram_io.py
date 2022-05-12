@@ -4,6 +4,7 @@ Created on Thu May 12 11:29:26 2022
 
 @author: cfai2304
 """
+import numpy as np
 
 def fetch_metadata(path):  #  "{}\\Param_Import_metadata.txt"  or "{}\\Plot_Params.txt"
     with open(path, "r") as ifstream:
@@ -31,4 +32,15 @@ def save_metadata(path, params, from_="INTR"):
         for param, val in params.items():
             ofstream.write("\n{}:\t{}".format(param, val))
             
+    return
+
+def save_PL(path, wave_list, apods, spectra_list):
+    header = []
+    data = np.empty((len(wave_list[0]), len(apods) * 2))
+    for i, apod in enumerate(apods):
+        data[:, 2*i] = wave_list[i]
+        data[:, 2*i+1] = spectra_list[i].flatten()
+        header.append("Wavelength [nm] apod={}".format(apod))
+        header.append("PL [counts] apod={}".format(apod))
+    np.savetxt(path, data, delimiter=',', header=",".join(header))
     return
