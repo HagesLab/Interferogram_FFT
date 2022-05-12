@@ -75,8 +75,8 @@ Usemapdata= False      #To maximize TRPL decay - does the same as the Averaged_M
 transfer_func = True # Only if not using mapdata
 norm_fname = "cuvet_norm_0.txt"
 
-AverageTRPL = True                     #Only if not using mapdata
-rangevalTRPL = [[650,670], [660,680]]  #nm    #Only if not using mapdata
+AverageTRPL = False                     #Only if not using mapdata
+rangevalTRPL = [[650,670]]  #nm    #Only if not using mapdata
 NormTRPL = False
 BKGTRPL = True
 TRPLmin_OM = 1e-4
@@ -85,7 +85,7 @@ overidexrange = [-10,1000]    #Only if overriding range
 
 #Fitting TRPL
 FitTRPL = True
-fit_range = [[5,12], [5,12]]   #List length must match that of rangeValTRPL / if mapdata then length 1
+fit_range = [[5,12]]   #List length must match that of rangeValTRPL / if mapdata then length 1
 fit_on_TRES = True
 
 #Composite TRES
@@ -247,70 +247,55 @@ else:
 
 
 if AverageTRPL:
-    integralTRPL = np.empty([len(rangevalTRPL),len(time_data)])
-    for i in range(len(rangevalTRPL)):
-        index = [(np.abs(wave-np.min(rangevalTRPL[i]))).argmin(),(np.abs(wave-np.max(rangevalTRPL[i]))).argmin()]
-        if Usemapdata:
-            TRPLarray = np.sum(AVGTRPL[:,np.min(index):np.max(index)], axis=1)
-        else:
-            TRPLarray = simpson(AVGTRPL[:,np.min(index):np.max(index)], x=wave[np.min(index):np.max(index)], axis=1)
-            
-        if NormTRPL:
-            TRPLarray = TRPLarray/TRPLarray.max()
-        if BKGTRPL:
-            index = [(np.abs(time_data-np.min(BKGrange))).argmin(),(np.abs(time_data-np.max(BKGrange))).argmin()]
-            BKGval = np.mean(TRPLarray[np.min(index):np.max(index)])
-            TRPLarray = TRPLarray - BKGval
-        integralTRPL[i] = TRPLarray
+    pass
 else:
+    rangevalTRPL = [[np.min(wave), np.max(wave)]]
+    
+integralTRPL = np.empty([len(rangevalTRPL),len(time_data)])
+for i in range(len(rangevalTRPL)):
+    # Closest?
+    index = [(np.abs(wave-np.min(rangevalTRPL[i]))).argmin(),(np.abs(wave-np.max(rangevalTRPL[i]))).argmin()]
     if Usemapdata:
-        integralTRPL = np.sum(AVGTRPL, axis=1)
+        integralTRPL[i] = np.sum(AVGTRPL[:,np.min(index):np.max(index)], axis=1)
     else:
-        integralTRPL = simpson(AVGTRPL, x=wave, axis=1)
+        integralTRPL[i] = simpson(AVGTRPL[:,np.min(index):np.max(index)], x=wave[np.min(index):np.max(index)], axis=1)
         
     if NormTRPL:
-        integralTRPL = integralTRPL/integralTRPL.max()
+        integralTRPL[i] = integralTRPL[i]/integralTRPL[i].max()
     if BKGTRPL:
         index = [(np.abs(time_data-np.min(BKGrange))).argmin(),(np.abs(time_data-np.max(BKGrange))).argmin()]
-        BKGval = np.mean(integralTRPL[np.min(index):np.max(index)])
-        integralTRPL = integralTRPL - BKGval
+        BKGval = np.mean(integralTRPL[i][np.min(index):np.max(index)])
+        integralTRPL[i] = integralTRPL[i] - BKGval
 
 
-PLname = os.path.join(path, '{}_TRPLPlot.png'.format(exper_ID))
-labels = ["{} to {} nm".format(min(PL_range), max(PL_range)) for PL_range in rangevalTRPL]
+if AverageTRPL:
+    labels = ["{} to {} nm".format(min(PL_range), max(PL_range)) for PL_range in rangevalTRPL]
+else:
+    labels = [None]
+    
 if overrideTRPLrange:
     start_time, end_time = overidexrange[0], overidexrange[1]
 else:
     start_time, end_time = timeRange[0], timeRange[1]
+    
+PLname = os.path.join(path, '{}_TRPLPlot.png'.format(exper_ID))
 plot_TRPL_decay(time_data, integralTRPL, TRPLmin_OM, labels=labels, 
                 start_time=start_time, end_time=end_time, export=PLname)
 
 if FitTRPL:
-    if AverageTRPL:
-        TRPL_fit_list, time_fit_list, fit_label_list = [],[],[]
-        for i in range(len(integralTRPL)):
-            TRPL_fit, time_fit, fit_label, popt, perr = Fit_1exp(integralTRPL[i],time_data,fit_range[i])
-            TRPL_fit = list(TRPL_fit)
-            time_fit = list(time_fit)
-            fit_label = list(fit_label)
-            TRPL_fit_list.append(TRPL_fit)
-            time_fit_list.append(time_fit)
-            fit_label_list.append(fit_label)
-    else:
-        TRPL_fit, time_fit, fit_label, popt, perr = Fit_1exp(integralTRPL,time_data,fit_range[0])
-
-if FitTRPL:
-    TRPLFitname = os.path.join(path, '{}_TRPLFitPlot.png'.format(exper_ID))
-    if AverageTRPL:
-        fit = (time_fit_list, TRPL_fit_list, fit_label_list)
-    else:
-        fit = (time_fit, TRPL_fit, fit_label)
+    TRPL_fit_list, time_fit_list, fit_label_list = [],[],[]
+    for i in range(len(integralTRPL)):
+        TRPL_fit, time_fit, fit_label, popt, perr = Fit_1exp(integralTRPL[i],time_data,fit_range[i])
+        TRPL_fit = list(TRPL_fit)
+        time_fit = list(time_fit)
+        fit_label = list(fit_label)
+        TRPL_fit_list.append(TRPL_fit)
+        time_fit_list.append(time_fit)
+        fit_label_list.append(fit_label)
         
-    labels = ["{} to {} nm".format(min(PL_range), max(PL_range)) for PL_range in rangevalTRPL]
-    if overrideTRPLrange:
-        start_time, end_time = overidexrange[0], overidexrange[1]
-    else:
-        start_time, end_time = timeRange[0], timeRange[1]
+    fit = (time_fit_list, TRPL_fit_list, fit_label_list)
+   
+    TRPLFitname = os.path.join(path, '{}_TRPLFitPlot.png'.format(exper_ID))
     plot_TRPL_decay(time_data, integralTRPL, TRPLmin_OM, labels=labels, 
                     start_time=start_time, end_time=end_time, fit=fit, export=TRPLFitname)
     
@@ -336,20 +321,13 @@ TRPL = fig.add_subplot(grid[:-1, 0], xticklabels=[],sharey=main_ax)
 TRPL.invert_xaxis()
 TRPL.set_xscale('log')
 TRPL.set_xlim(2*np.max(integralTRPL),np.max(integralTRPL)*TRPLmin_OM)
-if fit_on_TRES and FitTRPL:
-    if AverageTRPL:
-        for i in range(len(integralTRPL)):
-            TRPL.plot(integralTRPL[i],time_data,label=str(min(np.array(rangevalTRPL[i],dtype='int16'))) + " to " + str(max(np.array(rangevalTRPL[i],dtype='int16'))) + " nm")
-            TRPL.plot(np.array(TRPL_fit_list[i]),np.array(time_fit_list[i]),'k--',label = ''.join(fit_label_list[i]))
-    else:
-        TRPL.plot(integralTRPL,time_data)
-        TRPL.plot(TRPL_fit,time_fit,'k--',label = fit_label)
-else:
-    if AverageTRPL:
-        for i in range(len(integralTRPL)):
-            TRPL.plot(integralTRPL[i],time_data,label=str(min(rangevalTRPL[i])) + " to " + str(max(rangevalTRPL[i])) + " nm")
-    else:
-        TRPL.plot(integralTRPL,time_data)
+
+for i in range(len(integralTRPL)):
+    TRPL.plot(integralTRPL[i],time_data,label=labels[i])
+    if fit_on_TRES and FitTRPL:
+        TRPL.plot(np.array(TRPL_fit_list[i]),np.array(time_fit_list[i]),'k--',label = ''.join(fit_label_list[i]))
+
+
 TRPL.set(ylabel='Time / ns')
 
 PL = fig.add_subplot(grid[-1, 1], yticklabels=[], sharex=main_ax)
