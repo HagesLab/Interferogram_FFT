@@ -14,6 +14,7 @@ import os
 import matplotlib.colors
 from matplotlib.ticker import LogLocator
 from scipy import ndimage
+from scipy.integrate import simpson
 import ast
 
 path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220509\170820"
@@ -68,8 +69,8 @@ rangevalPL = [[0,1],[4,20]]  #ns
 NormPL = False
 
 #TRPL Plot
-Usemapdata= False      #To maximize TRPL decay
-transfer_func = True # Only if not using mapdata
+Usemapdata= False      #To maximize TRPL decay - does the same as the Averaged_MAP script
+transfer_func = False # Only if not using mapdata
 norm_fname = "cuvet_norm_0.txt"
 AverageTRPL = False                     #Only if not using mapdata
 rangevalTRPL = [[650,670]]  #nm    #Only if not using mapdata
@@ -194,7 +195,6 @@ tplot=time_data[indext[0]:indext[1]]
 
 timemesh, wavemesh = np.meshgrid(WLPlot,tplot)
 TRESplot=build_TRES[indext[0]:indext[1],indexWL[0]:indexWL[1]]
-min_value = np.amin(TRESplot)
 TRESplot = np.where(TRESplot<min_value,min_value,TRESplot)
 
 fig = plt.figure(2,dpi=120)
@@ -254,7 +254,7 @@ if AverageTRPL:
     integralTRPL = np.empty([len(rangevalTRPL),len(time_data)])
     for i in range(len(rangevalTRPL)):
         index = [(np.abs(wave-np.min(rangevalTRPL[i]))).argmin(),(np.abs(wave-np.max(rangevalTRPL[i]))).argmin()]
-        TRPLarray = np.sum(AVGTRPL[:,np.min(index):np.max(index)],axis=1)
+        TRPLarray = simpson(AVGTRPL[:,np.min(index):np.max(index)], x=wave, axis=1)
         if NormTRPL:
             TRPLarray = TRPLarray/TRPLarray.max()
         if BKGTRPL:
@@ -263,7 +263,7 @@ if AverageTRPL:
             TRPLarray = TRPLarray - BKGval
         integralTRPL[i] = TRPLarray
 else:
-    integralTRPL = np.sum(AVGTRPL,axis=1)
+    integralTRPL = simpson(AVGTRPL, x=wave, axis=1)
     if NormTRPL:
         integralTRPL = integralTRPL/integralTRPL.max()
     if BKGTRPL:

@@ -6,16 +6,17 @@ Created on Mon Nov 30 11:37:33 2020
 
 from interferogram_functions import prep_interferogram, prep_map, FFT_intr, FFT_map, import_MAP
 from make_norm_spec import load_spectrum, interp
+from scipy.integrate import simpson
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 import numpy as np
 from numpy import savetxt
 import os
 
-path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220509\170820"
-save_params = 1          #Use this to create a txt file that can be imported into the "..._MAP_script"
-save_PL = 1             # Save a .csv of wavelength/PL datasets - one PL per apodization
-save_TRPL = 1            # Save a .csv of the avereraged Time/PL dataset
+path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220509\151642"
+save_params = 0          #Use this to create a txt file that can be imported into the "..._MAP_script"
+save_PL = 0            # Save a .csv of wavelength/PL datasets - one PL per apodization
+save_TRPL = 0            # Save a .csv of the avereraged Time/PL dataset
 
 transfer_func = True     # Normalize by a transfer function specific to the optical path
 BKGsub = True               #Background Subtract - Generally True
@@ -94,10 +95,11 @@ if transfer_func:
     FFT_map = np.fliplr(np.array(FFT_map,dtype="float").T)
     
     FFT_wave, FFT_map = interp(FFT_wave, FFT_map.T, start_wave, end_wave, 1)
+
     
     FFT_map = (FFT_map.T / norm).T
-      
-    integralTRPL = np.sum(FFT_map, axis=0) 
+
+    integralTRPL = simpson(FFT_map, x=FFT_wave, axis=0)
     if BKGsub:
         index = [(np.abs(time_data-np.min(BKGrange))).argmin(),(np.abs(time_data-np.max(BKGrange))).argmin()]
         BKGval = np.mean(integralTRPL[np.min(index):np.max(index)])
