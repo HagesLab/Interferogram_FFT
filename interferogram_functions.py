@@ -19,25 +19,6 @@ try:
 except ModuleNotFoundError:
     print("Warning: BaselineRemoval library not found")
 
-def import_INTR(path):
-    allFiles = []
-    b = glob.glob(path + "/*.txt")  # glob. lists the filename and path
-    allFiles.extend(b)
-
-    for i in range(len(allFiles)):
-        namestest = allFiles[i].split('_')[-1]
-        if namestest == r"POS.txt":
-            with open(allFiles[i],'r') as j:
-                pos_data = np.array(list(csv.reader(j,delimiter="\t")),dtype='float')[0,:]
-                samplename = os.path.split(allFiles[i])[-1].split(".")[0]
-                samplename = samplename.replace("_POS","")
-        elif namestest == r"INTR.txt":
-            with open(allFiles[i],'r') as j:
-                intr_data = np.array(list(csv.reader(j,delimiter="\t")),dtype='float')[0,:]
-    return pos_data, intr_data
-
-
-
 def prep_interferogram(pos_data,intr_data,apodization_width,apod_type="BH",mean_sub=True,resample=True,resample_factor=4,shift=False,pad_test=True,padfactor=15,plots=True,pltzoom=False,zoom_range=[-.25,0.25],baseline_sub_state=False):
     intr_data, pos_data = Interf_calibration1D.interf_calibration1D(intr_data,pos_data)
     shiftfactor = 0
@@ -201,34 +182,6 @@ def FFT_intr(preFFT_pos,preFFT_data, plots=False,correct=True,scale="linear"):
         plt.legend()
 
     return wave, FFT_intr_trim_full.reshape((1,len(FFT_intr_trim_full)))[0]
-
-def import_MAP(path):
-    allFiles = []
-    b = glob.glob(path + "/*.txt")  # glob. lists the filename and path
-    allFiles.extend(b)
-
-
-    for i in range(len(allFiles)):
-        namestest = allFiles[i].split('_')[-1]
-        if namestest == r"MAP.txt":
-            with open(allFiles[i],'r') as j:
-                map_data = np.array(list(csv.reader(j,delimiter="\t")),dtype='float')
-        elif namestest == r"POS.txt":
-            with open(allFiles[i],'r') as j:
-                pos_data = np.array(list(csv.reader(j,delimiter="\t")),dtype='float')[0,:]
-                samplename = os.path.split(allFiles[i])[-1].split(".")[0]
-                samplename = samplename.replace("_POS","")
-        elif namestest == r"TIME.txt":
-            with open(allFiles[i],'r') as j:
-                time_data = np.array(list(csv.reader(j,delimiter="\t")),dtype='float')[0,:]
-
-    # Discard the zero columns
-    standard=np.std(map_data, axis=0)
-    indexes=np.asarray(np.nonzero(standard))
-    map_data=map_data[:,indexes[0][0]:indexes[0][-1]]
-    time_data =time_data[indexes[0][0]:indexes[0][-1]]/1e3
-
-    return pos_data, time_data, map_data
 
 #Need to add baseline subtraction to MAP
 def prep_map(pos_data,map_data,apodization_width,apod_type="BH",resample=True,resample_factor=2,shift=False,pad_test=True,padfactor=4,mean_sub=True):

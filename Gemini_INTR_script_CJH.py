@@ -6,8 +6,8 @@ Created on Mon Nov 30 11:37:33 2020
 """
 
 # New version: FFT fixed
-from interferogram_functions import prep_interferogram,  FFT_intr, import_INTR
-from interferogram_io import save_metadata, save_PL
+from interferogram_functions import prep_interferogram,  FFT_intr
+from interferogram_io import save_metadata, save_PL, import_INTR
 import matplotlib.pyplot as plt
 import os
 import numpy as np

@@ -4,8 +4,8 @@ Created on Sat Oct 24 23:08:58 2020
 
 @author: Chuck
 """
-from interferogram_functions import FFT_map, import_MAP, prep_map, Fit_1exp
-from interferogram_io import fetch_metadata
+from interferogram_functions import FFT_map, prep_map, Fit_1exp
+from interferogram_io import fetch_metadata, import_MAP
 from make_norm_spec import interp, load_spectrum
 import matplotlib.pyplot as plt
 import numpy as np
@@ -18,7 +18,7 @@ from scipy import ndimage
 from scipy.integrate import simpson
 import ast
 
-path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220509\151642"
+path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220512\122427"
 params_from_INTR_metadata = True        #Import metadata from "...Averaged_MAP..." script - if not using this there may be bugs.
 save_data = True                        #Save all plots and TRES data
 ImportTRES = False                       #Use this to prevent recalcualting the FFT - must have "..TRES.h5" already savded
@@ -60,7 +60,7 @@ timeRange = [-10,60]
 PLRange = [550.,800.]
 
 #TRES
-min_value = 50
+min_value = 0.001
 Gauss_Filter = True
 sigmaval = 2   #For Gauss Filter
 
@@ -70,8 +70,8 @@ rangevalPL = [[0,1],[4,20]]  #ns
 NormPL = False
 
 #TRPL Plot
-Usemapdata= True      #To maximize TRPL decay - does the same as the Averaged_MAP script
-transfer_func = False # Only if not using mapdata
+Usemapdata= False      #To maximize TRPL decay - does the same as the Averaged_MAP script
+transfer_func = True # Only if not using mapdata
 norm_fname = "cuvet_norm_0.txt"
 AverageTRPL = False                     #Only if not using mapdata
 rangevalTRPL = [[650,670]]  #nm    #Only if not using mapdata

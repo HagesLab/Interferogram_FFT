@@ -4,8 +4,8 @@ Created on Mon Nov 30 11:37:33 2020
 @author: Chuck
 """
 
-from interferogram_functions import prep_interferogram, prep_map, FFT_intr, FFT_map, import_MAP
-from interferogram_io import save_metadata, save_PL
+from interferogram_functions import prep_interferogram, prep_map, FFT_intr, FFT_map
+from interferogram_io import save_metadata, save_PL, import_MAP
 from make_norm_spec import load_spectrum, interp
 from scipy.integrate import simpson
 import matplotlib.pyplot as plt
