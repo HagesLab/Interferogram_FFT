@@ -5,6 +5,7 @@ Created on Mon Nov 30 11:37:33 2020
 """
 
 from interferogram_functions import prep_interferogram, prep_map, FFT_intr, FFT_map, import_MAP
+from interferogram_io import save_metadata
 from make_norm_spec import load_spectrum, interp
 from scipy.integrate import simpson
 import matplotlib.pyplot as plt
@@ -14,11 +15,11 @@ from numpy import savetxt
 import os
 
 path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220509\151642"
-save_params = 0          #Use this to create a txt file that can be imported into the "..._MAP_script"
+save_params = 1          #Use this to create a txt file that can be imported into the "..._MAP_script"
 save_PL = 0            # Save a .csv of wavelength/PL datasets - one PL per apodization
 save_TRPL = 0            # Save a .csv of the avereraged Time/PL dataset
 
-transfer_func = True     # Normalize by a transfer function specific to the optical path
+transfer_func = False     # Normalize by a transfer function specific to the optical path
 BKGsub = True               #Background Subtract - Generally True
 bkg_limit = -3              #ns before the TRPL peak to average the background data up to - see plot
 start_wave = 550           #For Plotting
@@ -39,6 +40,11 @@ plots = True               #Deactivate plots from FFT and prep - useful if using
 
 TRPLmin_OM = 1e-4           #How many orders of magnitude to plot down in y-scale for TRPL curve
 
+# =============================================================================
+# Program
+# =============================================================================
+
+exper_ID = os.path.split(path)[-1]
 pos_data, time_data, map_data = import_MAP(path)
 
 #Background Subtract
@@ -161,14 +167,11 @@ if save_TRPL:
 
 # Best to turn this on only when you have found the desired params
 if save_params:
-    outputfilename_meta = path + "\\" + os.path.split(path)[-1] + '_FFTmetadata.txt'
+    outputfilename_meta = os.path.join(path, '{}_FFTmetadata.txt'.format(exper_ID))
     params = {"apod_width":apodization_width[0], "apod_type":apod_type, "do_resample":resample, "resample_factor":resample_factor,
               "do_shift":shift, "do_padzeros":pad_test, "pad_factor":padfactor, "do_baseline_sub":baseline_sub_state, "do_mean_sub":mean_sub,"shift_factor":shiftfactor,"background_subtract":BKGsub,"background_range_low":np.min(BKGrange), "background_range_high":np.max(BKGrange)}
-    with open(outputfilename_meta.format(path), 'w+') as ofstream:
-        ofstream.write("# Params used in Gemini_Averaged_MAP_script_CJH.py")
-        for param, val in params.items():
-            ofstream.write("\n{}:\t{}".format(param, val))
-
+    
+    save_metadata(outputfilename_meta, params, from_="Averaged MAP")
     if baseline_sub_state:
         outputfilename_baseline = path + "\\" + os.path.split(path)[-1] + '_BaselineFit.txt'
         savetxt(outputfilename_baseline,baseline_fit,delimiter='  ')

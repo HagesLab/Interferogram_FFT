@@ -24,3 +24,11 @@ def fetch_metadata(path):  #  "{}\\Param_Import_metadata.txt"  or "{}\\Plot_Para
                     param_values_dict[param] = str(new_value)
 
     return param_values_dict
+
+def save_metadata(path, params, from_="INTR"):
+    with open(path, 'w+') as ofstream:
+        ofstream.write("# Params used in {} script".format(from_))
+        for param, val in params.items():
+            ofstream.write("\n{}:\t{}".format(param, val))
+            
+    return

@@ -96,7 +96,7 @@ composite_legend = True
 startTime = time.time()
 
 exper_ID = os.path.split(path)[-1]
-outputfilename = os.path.join(path, '{}_TRES.h5'.format(exper_ID))
+
 pos_data, time_data, map_data = import_MAP(path)
 
 # Auto read params from INTR
@@ -394,6 +394,7 @@ if save_data:
 
 #Write 2D Data Set
 if save_data:
+    outputfilename = os.path.join(path, '{}_TRES.h5'.format(exper_ID))
     hf = h5py.File(outputfilename,'w')
     hf.create_dataset('TRES Data', data=build_TRES)
     hf.create_dataset('Time Data', data=time_data)

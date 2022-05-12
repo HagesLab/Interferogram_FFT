@@ -7,6 +7,7 @@ Created on Mon Nov 30 11:37:33 2020
 
 # New version: FFT fixed
 from interferogram_functions import prep_interferogram,  FFT_intr, import_INTR
+from interferogram_io import save_metadata
 import matplotlib.pyplot as plt
 import os
 import numpy as np
@@ -35,6 +36,11 @@ baseline_sub_state = False  #Perform IModPoly baseline subtraction if not a line
 mean_sub = True             #Shift the average value of the interferogram to be zero
 plots = True               #Deactivate plots from FFT and prep - useful if using more than one apod width to compare.
 
+# =============================================================================
+# Program
+# =============================================================================
+
+exper_ID = os.path.split(path)[-1]
 pos_data, intr_data = import_INTR(path)
 
 wave_list, FFT_intr_trim_list = [], []
@@ -99,13 +105,11 @@ if save_PL:
 
 # Best to turn this on only when you have found the desired params
 if save_params:
-    outputfilename_meta = path + "\\" + os.path.split(path)[-1] + '_FFTmetadata.txt'
+    outputfilename_meta = os.path.join(path, '{}_FFTmetadata.txt'.format(exper_ID))
     params = {"apod_width":apodization_width, "apod_type":apod_type, "do_resample":resample, "resample_factor":resample_factor,
               "do_shift":shift, "do_padzeros":pad_test, "pad_factor":padfactor, "do_baseline_sub":baseline_sub_state, "do_mean_sub":mean_sub,"shift_factor":shiftfactor}
-    with open(outputfilename_meta.format(path), 'w+') as ofstream:
-        ofstream.write("# Params used in Gemini_INTR_script_CJH.py")
-        for param, val in params.items():
-            ofstream.write("\n{}:\t{}".format(param, val))
+    
+    save_metadata(outputfilename_meta, params, from_="INTR")
 
     if baseline_sub_state:
         outputfilename_baseline = path + "\\" + os.path.split(path)[-1] + '_BaselineFit.txt'
