@@ -4,7 +4,8 @@ Created on Sat Oct 24 23:08:58 2020
 
 @author: Chuck
 """
-from interferogram_functions import FFT_map, import_MAP, prep_map, fetch_metadata, Fit_1exp
+from interferogram_functions import FFT_map, import_MAP, prep_map, Fit_1exp
+from interferogram_io import fetch_metadata
 from make_norm_spec import interp, load_spectrum
 import matplotlib.pyplot as plt
 import numpy as np
@@ -17,7 +18,7 @@ from scipy import ndimage
 from scipy.integrate import simpson
 import ast
 
-path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220509\170820"
+path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220509\151642"
 params_from_INTR_metadata = True        #Import metadata from "...Averaged_MAP..." script - if not using this there may be bugs.
 save_data = True                        #Save all plots and TRES data
 ImportTRES = False                       #Use this to prevent recalcualting the FFT - must have "..TRES.h5" already savded
@@ -69,7 +70,7 @@ rangevalPL = [[0,1],[4,20]]  #ns
 NormPL = False
 
 #TRPL Plot
-Usemapdata= False      #To maximize TRPL decay - does the same as the Averaged_MAP script
+Usemapdata= True      #To maximize TRPL decay - does the same as the Averaged_MAP script
 transfer_func = False # Only if not using mapdata
 norm_fname = "cuvet_norm_0.txt"
 AverageTRPL = False                     #Only if not using mapdata
@@ -93,12 +94,15 @@ composite_legend = True
 # Program
 # =============================================================================
 startTime = time.time()
-outputfilename = path + "\\" + os.path.split(path)[-1] + '_TRES.h5'
+
+exper_ID = os.path.split(path)[-1]
+outputfilename = os.path.join(path, '{}_TRES.h5'.format(exper_ID))
 pos_data, time_data, map_data = import_MAP(path)
 
 # Auto read params from INTR
 if params_from_INTR_metadata:
-    params = fetch_metadata(path,"{}\\" + os.path.split(path)[-1] + '_FFTmetadata.txt')
+    metadata_path = os.path.join(path, '{}_FFTmetadata.txt'.format(exper_ID))
+    params = fetch_metadata(metadata_path)
 
 if params_from_INTR_metadata:
     apodization_width = params['apod_width']
@@ -245,16 +249,21 @@ if save_data:
 if Usemapdata:
     AVGTRPL = np.fliplr(map_data.T)
     AverageTRPL=False
+
 else:
     AVGTRPL = build_TRES
-    
+
 
 
 if AverageTRPL:
     integralTRPL = np.empty([len(rangevalTRPL),len(time_data)])
     for i in range(len(rangevalTRPL)):
         index = [(np.abs(wave-np.min(rangevalTRPL[i]))).argmin(),(np.abs(wave-np.max(rangevalTRPL[i]))).argmin()]
-        TRPLarray = simpson(AVGTRPL[:,np.min(index):np.max(index)], x=wave, axis=1)
+        if Usemapdata:
+            TRPLarray = np.sum(AVGTRPL[:,np.min(index):np.max(index)], axis=1)
+        else:
+            TRPLarray = simpson(AVGTRPL[:,np.min(index):np.max(index)], x=wave, axis=1)
+            
         if NormTRPL:
             TRPLarray = TRPLarray/TRPLarray.max()
         if BKGTRPL:
@@ -263,7 +272,11 @@ if AverageTRPL:
             TRPLarray = TRPLarray - BKGval
         integralTRPL[i] = TRPLarray
 else:
-    integralTRPL = simpson(AVGTRPL, x=wave, axis=1)
+    if Usemapdata:
+        integralTRPL = np.sum(AVGTRPL, axis=1)
+    else:
+        integralTRPL = simpson(AVGTRPL, x=wave, axis=1)
+        
     if NormTRPL:
         integralTRPL = integralTRPL/integralTRPL.max()
     if BKGTRPL:

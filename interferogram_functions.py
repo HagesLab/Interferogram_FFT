@@ -368,25 +368,6 @@ def FFT_map(FFT_pos,FFT_data, plots=False,correct=False,scale="linear"):
     return wave, FFT_data[select]
 
 
-def fetch_metadata(dir_name,openfile):  #  "{}\\Param_Import_metadata.txt"  or "{}\\Plot_Params.txt"
-    with open(openfile.format(dir_name), "r") as ifstream:
-        param_values_dict = {}
-        for line in ifstream:
-            if "#" in line: continue
-
-            else:
-                param = line[0:line.find(':')]
-                new_value = line[line.find('\t') + 1:].strip('\n')
-
-                try:
-                    if "." in new_value:
-                        param_values_dict[param] = float(new_value)
-                    else:
-                        param_values_dict[param] = int(new_value)
-                except:
-                    param_values_dict[param] = str(new_value)
-
-    return param_values_dict
 
 #Fit TRPL
 def Fit_1exp(TRPL_data,time_data,fitrange):
