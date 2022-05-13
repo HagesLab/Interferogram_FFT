@@ -214,47 +214,28 @@ else:
         build_TRES = build_TRES.T
         
 
-
-# Plot the results (TRES)
-indexWL = where_closest(wave, PLRange)
-WLPlot=wave[indexWL[0]:indexWL[1]]
-indext = where_closest(time_data, timeRange)
-tplot=time_data[indext[0]:indext[1]]
-
-timemesh, wavemesh = np.meshgrid(WLPlot,tplot)
-TRES=build_TRES[indext[0]:indext[1],indexWL[0]:indexWL[1]]
-TRES = np.where(TRES<min_value,min_value,TRES)
-
-plot_TRES(timemesh, wavemesh, TRES, Gauss_Filter=Gauss_Filter, sigma=sigmaval)
-
-#Plot averged PL over given range
+# Averged PL over given range
 if AveragePL:
-    plot_TRES = np.empty([len(rangevalPL),len(wave)])
+    averaged_PL_spec = np.empty([len(rangevalPL),len(wave)])
     for i in range(len(rangevalPL)):
         index = where_closest(time_data, rangevalPL[i])
         newarr= np.sum(build_TRES[index[0]:index[1],:],axis=0)
         if NormPL:
             newarr = (newarr-newarr.min())/(newarr.max()-newarr.min())
-        plot_TRES[i] = newarr
+        averaged_PL_spec[i] = newarr
 else:
-    plot_TRES = np.sum(build_TRES,axis=0)
+    averaged_PL_spec = np.sum(build_TRES,axis=0)
     if NormPL:
-        plot_TRES = (plot_TRES-plot_TRES.min())/(plot_TRES.max()-plot_TRES.min())
-
-
-PLname = os.path.join(path, '{}_PLPlot.png'.format(exper_ID))
-labels = ["{} to {} ns".format(PL_range[0], PL_range[1]) for PL_range in rangevalPL]
-plot_PL_spectrum(wave, plot_TRES, labels, PLRange[0], PLRange[1], export=PLname)
-
-
-#Plot integral TRPL decay over given range
+        averaged_PL_spec = (averaged_PL_spec-averaged_PL_spec.min())/(averaged_PL_spec.max()-averaged_PL_spec.min())
+        
+        
+# integral TRPL decay over given range
 if Usemapdata:
     AVGTRPL = np.fliplr(map_data.T)
     AverageTRPL=False
 
 else:
     AVGTRPL = build_TRES
-
 
 if AverageTRPL:
     pass
@@ -276,8 +257,39 @@ for i in range(len(rangevalTRPL)):
         index = where_closest(time_data, BKGrange)
         BKGval = np.mean(integralTRPL[i][index[0]:index[1]])
         integralTRPL[i] -= BKGval
+        
+# Fit a monoexponential to integral TRPL
+if FitTRPL:
+    TRPL_fit_list, time_fit_list, fit_label_list = [],[],[]
+    for i in range(len(integralTRPL)):
+        TRPL_fit, time_fit, fit_label, popt, perr = Fit_1exp(integralTRPL[i],time_data,fit_range[i])
+        TRPL_fit = list(TRPL_fit)
+        time_fit = list(time_fit)
+        fit_label = list(fit_label)
+        TRPL_fit_list.append(TRPL_fit)
+        time_fit_list.append(time_fit)
+        fit_label_list.append(fit_label)
+        
+    fit = (time_fit_list, TRPL_fit_list, fit_label_list)
+        
+# Plot the results (TRES)
+indexWL = where_closest(wave, PLRange)
+WLPlot=wave[indexWL[0]:indexWL[1]]
+indext = where_closest(time_data, timeRange)
+tplot=time_data[indext[0]:indext[1]]
 
+timemesh, wavemesh = np.meshgrid(WLPlot,tplot)
+TRES=build_TRES[indext[0]:indext[1],indexWL[0]:indexWL[1]]
+TRES = np.where(TRES<min_value,min_value,TRES)
 
+plot_TRES(timemesh, wavemesh, TRES, Gauss_Filter=Gauss_Filter, sigma=sigmaval)
+
+# Plot averaged PL
+PLname = os.path.join(path, '{}_PLPlot.png'.format(exper_ID))
+labels = ["{} to {} ns".format(PL_range[0], PL_range[1]) for PL_range in rangevalPL]
+plot_PL_spectrum(wave, averaged_PL_spec, labels, PLRange[0], PLRange[1], export=PLname)
+
+# Plot averaged TRPL
 if AverageTRPL:
     labels = ["{} to {} nm".format(PL_range[0], PL_range[1]) for PL_range in rangevalTRPL]
 else:
@@ -293,23 +305,10 @@ plot_TRPL_decay(time_data, integralTRPL, TRPLmin_OM, labels=labels,
                 start_time=start_time, end_time=end_time, export=PLname)
 
 if FitTRPL:
-    TRPL_fit_list, time_fit_list, fit_label_list = [],[],[]
-    for i in range(len(integralTRPL)):
-        TRPL_fit, time_fit, fit_label, popt, perr = Fit_1exp(integralTRPL[i],time_data,fit_range[i])
-        TRPL_fit = list(TRPL_fit)
-        time_fit = list(time_fit)
-        fit_label = list(fit_label)
-        TRPL_fit_list.append(TRPL_fit)
-        time_fit_list.append(time_fit)
-        fit_label_list.append(fit_label)
-        
-    fit = (time_fit_list, TRPL_fit_list, fit_label_list)
-   
     TRPLFitname = os.path.join(path, '{}_TRPLFitPlot.png'.format(exper_ID))
     plot_TRPL_decay(time_data, integralTRPL, TRPLmin_OM, labels=labels, 
                     start_time=start_time, end_time=end_time, fit=fit, export=TRPLFitname)
     
-
 #Composite TRES
 min_value = np.amin(TRES)
 max_value = np.amax(TRES)
@@ -347,10 +346,10 @@ TRPL.set(ylabel='Time / ns')
 
 PL = fig.add_subplot(grid[-1, 1], yticklabels=[], sharex=main_ax)
 if AveragePL:
-    for i in range(len(plot_TRES)):
-        PL.plot(wave,plot_TRES[i],label="{} to {} ns".format(*rangevalPL[i]))
+    for i in range(len(averaged_PL_spec)):
+        PL.plot(wave,averaged_PL_spec[i],label="{} to {} ns".format(*rangevalPL[i]))
 else:
-    PL.plot(wave,plot_TRES)
+    PL.plot(wave,averaged_PL_spec)
 PL.set(xlabel='Wavelength / nm')
 if composite_legend:
     fig.legend(loc='lower left', bbox_to_anchor=(0, 0.1))
@@ -366,7 +365,7 @@ if save_data:
     hf.create_dataset('Time Data', data=time_data)
     hf.create_dataset('Wavelength', data=wave)
     hf.create_dataset('Metadata', data=[[min(PLRange),max(PLRange)]])
-    hf.create_dataset('PL', data=plot_TRES)
+    hf.create_dataset('PL', data=averaged_PL_spec)
     if AveragePL:
         hf.create_dataset('PL Metadata', data=rangevalPL)
     hf.create_dataset('TRPL', data=integralTRPL)
