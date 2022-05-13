@@ -28,7 +28,7 @@ ImportTRES = False                       #Use this to prevent recalcualting the 
 # If not importing TRES data
 # =============================================================================
 #trim time-scale to have a smaller data set
-rangeval = 100  #ns
+max_time_cutoff = 100  #ns
 #Plot Interferogram? (Background Subtracted and Shifted)
 intfPlot = False
 intrfxlims = "Full"   #if == "Full" no restriction, full data. Otherwise define range
@@ -127,12 +127,26 @@ else:
 if BKGrange[0] >= BKGrange[1]:
     raise ValueError("Invalid BKGrange {} to {}".format(BKGrange[0], BKGrange[1]))
     
+if PLRange[0] >= PLRange[1]:
+    raise ValueError("Invalid PLrange {} to {}".format(PLRange[0], PLRange[1]))
+    
+if timeRange[0] >= timeRange[1]:
+    raise ValueError("Invalid PLrange {} to {}".format(timeRange[0], timeRange[1]))
+    
+for r in rangevalPL:
+    if r[0] >= r[1]:
+        raise ValueError("Invalid rangevalPL {} to {}".format(r[0], r[1]))
+
+for r in rangevalTRPL:
+    if r[0] >= r[1]:
+        raise ValueError("Invalid rangevalTRPL {} to {}".format(r[0], r[1]))
+    
 if np.any(np.diff(time_data) <= 0):
     raise ValueError("time_data is not monotonically ascending")
 ##############
 
 if save_data:
-    allparam = {'rangeval':rangeval, 'intfPlot':intfPlot,'intrfxlims':intrfxlims, 'timeRange':timeRange, 'PLRange':PLRange, 'Gauss_Filter':Gauss_Filter, 'sigmaval':sigmaval, 'AveragePL':AveragePL, 'rangevalPL':rangevalPL,'NormPL':NormPL,'Usemapdata':Usemapdata,'AverageTRPL':AverageTRPL,'rangevalTRPL':rangevalTRPL,'NormTRPL':NormTRPL,'BKGTRPL':BKGTRPL,'TRPLmin_OM':TRPLmin_OM,'overrideTRPLrange':overrideTRPLrange , 'overidexrange':overidexrange, 'composite_legend':composite_legend,"apod_width":apodization_width, "apod_type":apod_type, "do_resample":resample, "resample_factor":resample_factor, "do_shift":shift, "do_padzeros":pad_test, "pad_factor":padfactor, "do_mean_sub":mean_sub, "shift_factor":shift_factor,"background_subtract":BKGsub,"background_range_low":BKGrange[0], "background_range_high":BKGrange[1],"baseline_sub_state":baseline_sub_state}
+    allparam = {'max_time_cutoff':max_time_cutoff, 'intfPlot':intfPlot,'intrfxlims':intrfxlims, 'timeRange':timeRange, 'PLRange':PLRange, 'Gauss_Filter':Gauss_Filter, 'sigmaval':sigmaval, 'AveragePL':AveragePL, 'rangevalPL':rangevalPL,'NormPL':NormPL,'Usemapdata':Usemapdata,'AverageTRPL':AverageTRPL,'rangevalTRPL':rangevalTRPL,'NormTRPL':NormTRPL,'BKGTRPL':BKGTRPL,'TRPLmin_OM':TRPLmin_OM,'overrideTRPLrange':overrideTRPLrange , 'overidexrange':overidexrange, 'composite_legend':composite_legend,"apod_width":apodization_width, "apod_type":apod_type, "do_resample":resample, "resample_factor":resample_factor, "do_shift":shift, "do_padzeros":pad_test, "pad_factor":padfactor, "do_mean_sub":mean_sub, "shift_factor":shift_factor,"background_subtract":BKGsub,"background_range_low":BKGrange[0], "background_range_high":BKGrange[1],"baseline_sub_state":baseline_sub_state}
     with open((r"{}\\"+os.path.split(path)[-1]+"_MapParams.txt").format(path), 'w+') as ofstream:
         ofstream.write("# Params used to make plots in Gemini_MAP_script_CJH.py")
         for param, val in allparam.items():
@@ -163,15 +177,15 @@ else:
    
     #Background Subtract TRPL Curves
     if BKGsub:
-        index = [where_closest(time_data, np.min(BKGrange)),where_closest(time_data, np.max(BKGrange))]
-        BKGval = np.mean(map_data[:,np.min(index):np.max(index)],axis=1)
+        index = where_closest(time_data, BKGrange)
+        BKGval = np.mean(map_data[:,index[0]:index[1]],axis=1)
         map_data = map_data - np.reshape(BKGval, (len(BKGval), 1))
 
     #if baseline_sub_state:
 
 
     #trim time-scale
-    index = (np.abs(time_data-np.max(rangeval))).argmin()
+    index = where_closest(time_data, max_time_cutoff)
     map_data = map_data[:,0:np.max(index)]
     time_data = time_data[0:np.max(index)]
 
@@ -204,9 +218,9 @@ else:
 
 
 # Plot the results (TRES)
-indexWL = [(np.abs(wave-np.min(PLRange))).argmin(),(np.abs(wave-np.max(PLRange))).argmin()]
+indexWL = where_closest(wave, PLRange)
 WLPlot=wave[indexWL[0]:indexWL[1]]
-indext = [(np.abs(time_data-np.min(timeRange))).argmin(),(np.abs(time_data-np.max(timeRange))).argmin()]
+indext = where_closest(time_data, timeRange)
 tplot=time_data[indext[0]:indext[1]]
 
 timemesh, wavemesh = np.meshgrid(WLPlot,tplot)
@@ -218,7 +232,7 @@ ax = fig.add_subplot()
 if Gauss_Filter:
     TRESplot = ndimage.gaussian_filter(TRESplot, sigma=sigmaval)
 norm= matplotlib.colors.LogNorm(vmin=min_value, vmax=TRESplot.max())
-levels = np.logspace(np.log10(np.min(min_value)),np.log10(np.max(TRESplot)),num=50)
+levels = np.logspace(np.log10(min_value),np.log10(np.max(TRESplot)),num=50)
 cs = ax.contourf(timemesh,wavemesh,TRESplot,levels=levels,norm=norm, cmap='plasma')
 cbar = fig.colorbar(cs)
 cbar.ax.yaxis.set_major_locator(LogLocator())
@@ -230,8 +244,8 @@ ax.set_xlabel('Wavelength / nm')
 if AveragePL:
     plot_TRES = np.empty([len(rangevalPL),len(wave)])
     for i in range(len(rangevalPL)):
-        index = [(np.abs(time_data-np.min(rangevalPL[i]))).argmin(),(np.abs(time_data-np.max(rangevalPL[i]))).argmin()]
-        newarr= np.sum(build_TRES[np.min(index):np.max(index),:],axis=0)
+        index = where_closest(time_data, rangevalPL[i])
+        newarr= np.sum(build_TRES[index[0]:index[1],:],axis=0)
         if NormPL:
             newarr = (newarr-newarr.min())/(newarr.max()-newarr.min())
         plot_TRES[i] = newarr
@@ -242,7 +256,7 @@ else:
 
 
 PLname = os.path.join(path, '{}_PLPlot.png'.format(exper_ID))
-labels = ["{} to {} ns".format(min(PL_range), max(PL_range)) for PL_range in rangevalPL]
+labels = ["{} to {} ns".format(PL_range[0], PL_range[1]) for PL_range in rangevalPL]
 plot_PL_spectrum(wave, plot_TRES, labels, PLRange[0], PLRange[1], export=PLname)
 
 
@@ -255,7 +269,6 @@ else:
     AVGTRPL = build_TRES
 
 
-
 if AverageTRPL:
     pass
 else:
@@ -264,22 +277,22 @@ else:
 integralTRPL = np.empty([len(rangevalTRPL),len(time_data)])
 for i in range(len(rangevalTRPL)):
     # Closest?
-    index = [(np.abs(wave-np.min(rangevalTRPL[i]))).argmin(),(np.abs(wave-np.max(rangevalTRPL[i]))).argmin()]
+    index = where_closest(wave, rangevalTRPL[i])
     if Usemapdata:
-        integralTRPL[i] = np.sum(AVGTRPL[:,np.min(index):np.max(index)], axis=1)
+        integralTRPL[i] = np.sum(AVGTRPL[:,index[0]:index[1]], axis=1)
     else:
-        integralTRPL[i] = simpson(AVGTRPL[:,np.min(index):np.max(index)], x=wave[np.min(index):np.max(index)], axis=1)
+        integralTRPL[i] = simpson(AVGTRPL[:,index[0]:index[1]], x=wave[index[0]:index[1]], axis=1)
         
     if NormTRPL:
         integralTRPL[i] = integralTRPL[i]/integralTRPL[i].max()
     if BKGTRPL:
-        index = [(np.abs(time_data-np.min(BKGrange))).argmin(),(np.abs(time_data-np.max(BKGrange))).argmin()]
-        BKGval = np.mean(integralTRPL[i][np.min(index):np.max(index)])
-        integralTRPL[i] = integralTRPL[i] - BKGval
+        index = where_closest(time_data, BKGrange)
+        BKGval = np.mean(integralTRPL[i][index[0]:index[1]])
+        integralTRPL[i] -= BKGval
 
 
 if AverageTRPL:
-    labels = ["{} to {} nm".format(min(PL_range), max(PL_range)) for PL_range in rangevalTRPL]
+    labels = ["{} to {} nm".format(PL_range[0], PL_range[1]) for PL_range in rangevalTRPL]
 else:
     labels = [None]
     
@@ -343,7 +356,7 @@ TRPL.set(ylabel='Time / ns')
 PL = fig.add_subplot(grid[-1, 1], yticklabels=[], sharex=main_ax)
 if AveragePL:
     for i in range(len(plot_TRES)):
-        PL.plot(wave,plot_TRES[i],label=str(min(rangevalPL[i])) + " to " + str(max(rangevalPL[i])) + " ns")
+        PL.plot(wave,plot_TRES[i],label="{} to {} ns".format(*rangevalPL[i]))
 else:
     PL.plot(wave,plot_TRES)
 PL.set(xlabel='Wavelength / nm')
