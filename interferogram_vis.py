@@ -61,11 +61,12 @@ def plot_TRPL_decay(times, trpl, min_OM, labels=None, start_time=None, end_time=
     if export is not None:
         fig.savefig(export)
 
-def plot_TRES(timemesh, wavemesh, TRESplot, Gauss_Filter=False, sigma=0):
+def plot_TRES(timemesh, wavemesh, TRESplot, ax=None, fig=None, Gauss_Filter=False, sigma=0):
     min_value = np.amin(TRESplot)
     max_value = np.amax(TRESplot)
     
-    fig, ax = plt.subplots(dpi=120)
+    if fig is None:
+        fig, ax = plt.subplots(dpi=120)
     if Gauss_Filter:
         TRESplot = ndimage.gaussian_filter(TRESplot, sigma=sigma)
     norm= matplotlib.colors.LogNorm(vmin=min_value, vmax=max_value)

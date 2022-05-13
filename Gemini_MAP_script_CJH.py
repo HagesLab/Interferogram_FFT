@@ -310,11 +310,6 @@ if FitTRPL:
                     start_time=start_time, end_time=end_time, fit=fit, export=TRPLFitname)
     
 #Composite TRES
-min_value = np.amin(TRES)
-max_value = np.amax(TRES)
-norm= matplotlib.colors.LogNorm(vmin=min_value, vmax=max_value)
-levels = np.logspace(np.log10(min_value),np.log10(max_value),num=50)
-
 fig = plt.figure(6,dpi=120)
 grid = plt.GridSpec(2, 3, height_ratios=[1, 1/3],width_ratios=[0.8,2,0.44],wspace=0.05,hspace=0.05)
 
@@ -322,14 +317,7 @@ main_ax = fig.add_subplot(grid[:-1, 1:])
 main_ax.set_xlim(PLRange)
 main_ax.set_ylim(timeRange)
 main_ax.label_outer()
-
-cs = main_ax.contourf(timemesh,wavemesh,TRES,levels=levels,norm=norm, cmap='plasma')
-cbar = fig.colorbar(cs)
-cbar.ax.yaxis.set_major_locator(LogLocator())
-cbar.set_ticks(cbar.ax.yaxis.get_major_locator().tick_values(TRES.min(), TRES.max()))
-#cbar.ax.yaxis.set_major_locator(LogLocator())
-#cbar.set_ticks(cbar.ax.yaxis.get_major_locator().tick_values(TRES.min(), TRES.max()))
-#main_ax.tick_params(bottom='off')
+plot_TRES(timemesh, wavemesh, TRES, ax=main_ax, fig=fig, Gauss_Filter=Gauss_Filter, sigma=sigmaval)
 
 TRPL = fig.add_subplot(grid[:-1, 0], xticklabels=[],sharey=main_ax)
 TRPL.invert_xaxis()
@@ -340,7 +328,6 @@ for i in range(len(integralTRPL)):
     TRPL.plot(integralTRPL[i],time_data,label=labels[i])
     if fit_on_TRES and FitTRPL:
         TRPL.plot(np.array(TRPL_fit_list[i]),np.array(time_fit_list[i]),'k--',label = ''.join(fit_label_list[i]))
-
 
 TRPL.set(ylabel='Time / ns')
 
@@ -354,7 +341,7 @@ PL.set(xlabel='Wavelength / nm')
 if composite_legend:
     fig.legend(loc='lower left', bbox_to_anchor=(0, 0.1))
 if save_data:
-    TRESname = path + "\\" + os.path.split(path)[-1] + '_TRESPlot.png'
+    TRESname = os.path.join(path, '{}_TRESPlot.png'.format(exper_ID))
     plt.savefig(TRESname)
 
 #Write 2D Data Set
