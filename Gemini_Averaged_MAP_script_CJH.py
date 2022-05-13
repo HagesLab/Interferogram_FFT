@@ -48,9 +48,10 @@ TRPLmin_OM = 1e-4           #How many orders of magnitude to plot down in y-scal
 exper_ID = os.path.split(path)[-1]
 pos_data, time_data, map_data = import_MAP(path)
 
-#Background Subtract
+# Shift t=0 onto max intensity
 t_max = time_data[np.array(np.where(np.mean(map_data,axis=0)==np.max(np.mean(map_data,axis=0)))[0],dtype="int")]
-time_data=time_data-t_max
+time_data -= t_max
+
 BKGrange = np.array([time_data[0],bkg_limit],dtype='float')  #ns
 
 # Validation #

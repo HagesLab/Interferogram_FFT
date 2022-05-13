@@ -4,7 +4,7 @@ Created on Sat Oct 24 23:08:58 2020
 
 @author: Chuck
 """
-from interferogram_functions import FFT_map, prep_map, Fit_1exp
+from interferogram_functions import FFT_map, prep_map, Fit_1exp, where_closest
 from interferogram_io import fetch_metadata, import_MAP
 from interferogram_vis import plot_PL_spectrum, plot_TRPL_decay
 from make_norm_spec import interp, load_spectrum
@@ -19,7 +19,7 @@ from scipy import ndimage
 from scipy.integrate import simpson
 import ast
 
-path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220512\150059"
+path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220512\122427"
 params_from_INTR_metadata = True        #Import metadata from "...Averaged_MAP..." script - if not using this there may be bugs.
 save_data = True                        #Save all plots and TRES data
 ImportTRES = False                       #Use this to prevent recalcualting the FFT - must have "..TRES.h5" already savded
@@ -66,14 +66,14 @@ Gauss_Filter = True
 sigmaval = 2   #For Gauss Filter
 
 #PL Plot
-AveragePL = True
+AveragePL = False
 rangevalPL = [[0,1],[4,20]]  #ns
 NormPL = False
 
 #TRPL Plot
 Usemapdata= False      #To maximize TRPL decay - does the same as the Averaged_MAP script
 transfer_func = True # Only if not using mapdata
-norm_fname = "cuvet_norm_0.txt"
+norm_fname = "cuvet_norm_new.txt"
 
 AverageTRPL = False                     #Only if not using mapdata
 rangevalTRPL = [[650,670]]  #nm    #Only if not using mapdata
@@ -122,6 +122,14 @@ if params_from_INTR_metadata:
 
 else:
     BKGrange = np.array([time_data[0],bkg_limit],dtype='float')  #ns
+    
+# Validation #
+if BKGrange[0] >= BKGrange[1]:
+    raise ValueError("Invalid BKGrange {} to {}".format(BKGrange[0], BKGrange[1]))
+    
+if np.any(np.diff(time_data) <= 0):
+    raise ValueError("time_data is not monotonically ascending")
+##############
 
 if save_data:
     allparam = {'rangeval':rangeval, 'intfPlot':intfPlot,'intrfxlims':intrfxlims, 'timeRange':timeRange, 'PLRange':PLRange, 'Gauss_Filter':Gauss_Filter, 'sigmaval':sigmaval, 'AveragePL':AveragePL, 'rangevalPL':rangevalPL,'NormPL':NormPL,'Usemapdata':Usemapdata,'AverageTRPL':AverageTRPL,'rangevalTRPL':rangevalTRPL,'NormTRPL':NormTRPL,'BKGTRPL':BKGTRPL,'TRPLmin_OM':TRPLmin_OM,'overrideTRPLrange':overrideTRPLrange , 'overidexrange':overidexrange, 'composite_legend':composite_legend,"apod_width":apodization_width, "apod_type":apod_type, "do_resample":resample, "resample_factor":resample_factor, "do_shift":shift, "do_padzeros":pad_test, "pad_factor":padfactor, "do_mean_sub":mean_sub, "shift_factor":shift_factor,"background_subtract":BKGsub,"background_range_low":BKGrange[0], "background_range_high":BKGrange[1],"baseline_sub_state":baseline_sub_state}
@@ -147,23 +155,25 @@ else:
     t_max = time_data[np.array(np.where(np.mean(map_data,axis=0)==np.max(np.mean(map_data,axis=0)))[0],dtype="int")]
     time_data = time_data - t_max
 
-   #Manual Shift of Peak
+    #Manual Shift of Peak
     if shift:
         pos_data = pos_data - shift_factor    #Taken from shift_factor output in the _INTR analysis script for this data
 
-   #Background Subtract TRPL Curves
+
+   
+    #Background Subtract TRPL Curves
     if BKGsub:
-        index = [(np.abs(time_data-np.min(BKGrange))).argmin(),(np.abs(time_data-np.max(BKGrange))).argmin()]
+        index = [where_closest(time_data, np.min(BKGrange)),where_closest(time_data, np.max(BKGrange))]
         BKGval = np.mean(map_data[:,np.min(index):np.max(index)],axis=1)
         map_data = map_data - np.reshape(BKGval, (len(BKGval), 1))
 
-   #if baseline_sub_state:
+    #if baseline_sub_state:
 
 
     #trim time-scale
     index = (np.abs(time_data-np.max(rangeval))).argmin()
     map_data = map_data[:,0:np.max(index)]
-    time_data=time_data[0:np.max(index)]
+    time_data = time_data[0:np.max(index)]
 
     #Plot Raw Data (Background Subtracted and Shifted)
     if intfPlot:
