@@ -340,3 +340,11 @@ def Fit_1exp(TRPL_data,time_data,fitrange):
     label =  r'$\tau:\ $' + np.array2string(popt[1], precision=2, separator=',', suppress_small=True) + ' ns'
 
     return TRPL_out, time_fit, label, popt, perr
+
+def where_closest(x : list, x0):
+    
+    if isinstance(x0, (int, float)):
+        return (np.abs(x - x0)).argmin()
+    
+    elif isinstance(x0, (list, tuple, np.ndarray)):
+        return [(np.abs(x - xi)).argmin() for xi in x0]

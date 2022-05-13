@@ -4,7 +4,7 @@ Created on Mon Nov 30 11:37:33 2020
 @author: Chuck
 """
 
-from interferogram_functions import prep_interferogram, prep_map, FFT_intr, FFT_map
+from interferogram_functions import prep_interferogram, prep_map, FFT_intr, FFT_map, where_closest
 from interferogram_io import save_metadata, save_PL, save_TRPL, import_MAP
 from interferogram_vis import plot_PL_spectrum, plot_TRPL_decay
 from make_norm_spec import load_spectrum, interp
@@ -15,7 +15,7 @@ import numpy as np
 from numpy import savetxt
 import os
 
-path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220512\150059"
+path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220512\234639"
 save_params = 1          #Use this to create a txt file that can be imported into the "..._MAP_script"
 export_PL = 1            # Save a .csv of wavelength/PL datasets - one PL per apodization
 export_TRPL = 1            # Save a .csv of the avereraged Time/PL dataset
@@ -23,7 +23,7 @@ export_TRPL = 1            # Save a .csv of the avereraged Time/PL dataset
 transfer_func = True     # Normalize by a transfer function specific to the optical path
 BKGsub = True               #Background Subtract - Generally True
 bkg_limit = -3              #ns before the TRPL peak to average the background data up to - see plot
-start_wave = 550           #For Plotting
+start_wave = 500           #For Plotting
 end_wave = 800             #For Plotting
 pltzoomstate = False        #Zoom in around the zero position in interferogram to better observe oscillations
 pltzoomrange = [-.25,.25]   #Range to zoom in on if pltzoomstate=True
@@ -52,18 +52,27 @@ pos_data, time_data, map_data = import_MAP(path)
 t_max = time_data[np.array(np.where(np.mean(map_data,axis=0)==np.max(np.mean(map_data,axis=0)))[0],dtype="int")]
 time_data=time_data-t_max
 BKGrange = np.array([time_data[0],bkg_limit],dtype='float')  #ns
+
+# Validation #
+if BKGrange[0] >= BKGrange[1]:
+    raise ValueError("Invalid BKGrange {} to {}".format(BKGrange[0], BKGrange[1]))
+    
+if np.any(np.diff(time_data) <= 0):
+    raise ValueError("time_data is not monotonically ascending")
+##############
+
 if BKGsub:
-    index = [(np.abs(time_data-np.min(BKGrange))).argmin(),(np.abs(time_data-np.max(BKGrange))).argmin()]
-    BKGval = np.mean(map_data[:,np.min(index):np.max(index)],axis=1)
+    index = where_closest(time_data, BKGrange)
+    BKGval = np.mean(map_data[:,index[0]:index[1]],axis=1)
     map_data = map_data - np.reshape(BKGval, (len(BKGval), 1))
 
 #Plot Wavelength Averaged decay to determine time range for background subtraction
 plt.figure(3, dpi=120)
 plt.plot(time_data,np.mean(map_data,axis=0))
-plt.axvspan(np.min(BKGrange),np.max(BKGrange),facecolor='r',alpha=0.2)
+plt.axvspan(BKGrange[0],BKGrange[1],facecolor='r',alpha=0.2)
 plt.xlim(right=2)
-#plt.xlabel('Time / ns')
-#plt.ylabel('Counts / a.u.')
+plt.xlabel('Time / ns')
+plt.ylabel('Counts / a.u.')
 plt.yscale('log')
 
 #New Time Averaged data from MAP
@@ -73,7 +82,7 @@ plt.yscale('log')
 AVG_map_data = np.sum(map_data,axis=1)
 
 if transfer_func:
-    norm_fname = "cuvet_norm_0.txt"
+    norm_fname = "cuvet_norm_new.txt"
     norm_waves, norm = load_spectrum(norm_fname)
     norm_waves, norm = interp(norm_waves, norm, start_wave, end_wave, 1)
 
@@ -106,8 +115,8 @@ if transfer_func:
 
     integralTRPL = simpson(FFT_map, x=FFT_wave, axis=0)
     if BKGsub:
-        index = [(np.abs(time_data-np.min(BKGrange))).argmin(),(np.abs(time_data-np.max(BKGrange))).argmin()]
-        BKGval = np.mean(integralTRPL[np.min(index):np.max(index)])
+        index = where_closest(time_data, BKGrange)
+        BKGval = np.mean(integralTRPL[index[0]:index[1]])
         integralTRPL = integralTRPL - BKGval
         
             
@@ -116,7 +125,7 @@ else:
 
 #Plot Full TRPL
 PLname = os.path.join(path, '{}_TRPLPlot.png'.format(exper_ID))
-plot_TRPL_decay(time_data, integralTRPL, TRPLmin_OM, PLname)
+plot_TRPL_decay(time_data, [integralTRPL], TRPLmin_OM, export=PLname, labels=[None])
 
 #Plot Full PL
 PLname = os.path.join(path, '{}_PLPlot.png'.format(exper_ID))
