@@ -5,7 +5,11 @@ Created on Thu May 12 13:56:13 2022
 @author: cfai2304
 """
 import matplotlib.pyplot as plt
+import matplotlib
+import matplotlib.colors
+from matplotlib.ticker import LogLocator
 import numpy as np
+from scipy import ndimage
 
 def plot_PL_spectrum(waves, spectra, labels, start_wave, end_wave, export=None, interval=None):
     fig, ax = plt.subplots(dpi=120)
@@ -56,3 +60,19 @@ def plot_TRPL_decay(times, trpl, min_OM, labels=None, start_time=None, end_time=
     ax.legend()
     if export is not None:
         fig.savefig(export)
+
+def plot_TRES(timemesh, wavemesh, TRESplot, Gauss_Filter=False, sigma=0):
+    min_value = np.amin(TRESplot)
+    max_value = np.amax(TRESplot)
+    
+    fig, ax = plt.subplots(dpi=120)
+    if Gauss_Filter:
+        TRESplot = ndimage.gaussian_filter(TRESplot, sigma=sigma)
+    norm= matplotlib.colors.LogNorm(vmin=min_value, vmax=max_value)
+    levels = np.logspace(np.log10(min_value),np.log10(max_value),num=50)
+    cs = ax.contourf(timemesh,wavemesh,TRESplot,levels=levels,norm=norm, cmap='plasma')
+    cbar = fig.colorbar(cs)
+    cbar.ax.yaxis.set_major_locator(LogLocator())
+    cbar.set_ticks(cbar.ax.yaxis.get_major_locator().tick_values(min_value, max_value))
+    ax.set_ylabel('Time / ns')
+    ax.set_xlabel('Wavelength / nm')

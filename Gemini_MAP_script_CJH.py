@@ -6,7 +6,7 @@ Created on Sat Oct 24 23:08:58 2020
 """
 from interferogram_functions import FFT_map, prep_map, Fit_1exp, where_closest
 from interferogram_io import fetch_metadata, import_MAP
-from interferogram_vis import plot_PL_spectrum, plot_TRPL_decay
+from interferogram_vis import plot_PL_spectrum, plot_TRPL_decay, plot_TRES
 from make_norm_spec import interp, load_spectrum
 import matplotlib.pyplot as plt
 import numpy as np
@@ -173,8 +173,6 @@ else:
     if shift:
         pos_data = pos_data - shift_factor    #Taken from shift_factor output in the _INTR analysis script for this data
 
-
-   
     #Background Subtract TRPL Curves
     if BKGsub:
         index = where_closest(time_data, BKGrange)
@@ -224,21 +222,10 @@ indext = where_closest(time_data, timeRange)
 tplot=time_data[indext[0]:indext[1]]
 
 timemesh, wavemesh = np.meshgrid(WLPlot,tplot)
-TRESplot=build_TRES[indext[0]:indext[1],indexWL[0]:indexWL[1]]
-TRESplot = np.where(TRESplot<min_value,min_value,TRESplot)
+TRES=build_TRES[indext[0]:indext[1],indexWL[0]:indexWL[1]]
+TRES = np.where(TRES<min_value,min_value,TRES)
 
-fig = plt.figure(2,dpi=120)
-ax = fig.add_subplot()
-if Gauss_Filter:
-    TRESplot = ndimage.gaussian_filter(TRESplot, sigma=sigmaval)
-norm= matplotlib.colors.LogNorm(vmin=min_value, vmax=TRESplot.max())
-levels = np.logspace(np.log10(min_value),np.log10(np.max(TRESplot)),num=50)
-cs = ax.contourf(timemesh,wavemesh,TRESplot,levels=levels,norm=norm, cmap='plasma')
-cbar = fig.colorbar(cs)
-cbar.ax.yaxis.set_major_locator(LogLocator())
-cbar.set_ticks(cbar.ax.yaxis.get_major_locator().tick_values(TRESplot.min(), TRESplot.max()))
-ax.set_ylabel('Time / ns')
-ax.set_xlabel('Wavelength / nm')
+plot_TRES(timemesh, wavemesh, TRES, Gauss_Filter=Gauss_Filter, sigma=sigmaval)
 
 #Plot averged PL over given range
 if AveragePL:
@@ -324,6 +311,11 @@ if FitTRPL:
     
 
 #Composite TRES
+min_value = np.amin(TRES)
+max_value = np.amax(TRES)
+norm= matplotlib.colors.LogNorm(vmin=min_value, vmax=max_value)
+levels = np.logspace(np.log10(min_value),np.log10(max_value),num=50)
+
 fig = plt.figure(6,dpi=120)
 grid = plt.GridSpec(2, 3, height_ratios=[1, 1/3],width_ratios=[0.8,2,0.44],wspace=0.05,hspace=0.05)
 
@@ -332,12 +324,12 @@ main_ax.set_xlim(PLRange)
 main_ax.set_ylim(timeRange)
 main_ax.label_outer()
 
-cs = main_ax.contourf(timemesh,wavemesh,TRESplot,levels=levels,norm=norm, cmap='plasma')
+cs = main_ax.contourf(timemesh,wavemesh,TRES,levels=levels,norm=norm, cmap='plasma')
 cbar = fig.colorbar(cs)
 cbar.ax.yaxis.set_major_locator(LogLocator())
-cbar.set_ticks(cbar.ax.yaxis.get_major_locator().tick_values(TRESplot.min(), TRESplot.max()))
+cbar.set_ticks(cbar.ax.yaxis.get_major_locator().tick_values(TRES.min(), TRES.max()))
 #cbar.ax.yaxis.set_major_locator(LogLocator())
-#cbar.set_ticks(cbar.ax.yaxis.get_major_locator().tick_values(TRESplot.min(), TRESplot.max()))
+#cbar.set_ticks(cbar.ax.yaxis.get_major_locator().tick_values(TRES.min(), TRES.max()))
 #main_ax.tick_params(bottom='off')
 
 TRPL = fig.add_subplot(grid[:-1, 0], xticklabels=[],sharey=main_ax)
