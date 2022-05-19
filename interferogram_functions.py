@@ -9,11 +9,9 @@ import Interf_calibration1D
 from scipy.interpolate import interp1d
 import Interf_calibration2D
 import matplotlib.pyplot as plt
-import glob
-import csv
 import os
 import pandas as pd
-from scipy.optimize import curve_fit
+from numpy.polynomial import Polynomial
 try:
     from BaselineRemoval import BaselineRemoval
 except ModuleNotFoundError:
@@ -333,20 +331,16 @@ def Fit_1exp(TRPL_data,time_data,fitrange):
     TRPL_fit = TRPL_data[low_index:high_index]
     time_fit = time_data[low_index:high_index]
     
-    from numpy.polynomial import Polynomial
     p = Polynomial.fit(time_fit, np.log(np.abs(TRPL_fit)), 1)
-    
     popt = p.convert().coef
     popt[1] = -1 / popt[1]
     popt[0] = np.exp(popt[0])
 
-    # popt, pcov = curve_fit(Exp1,time_fit,np.log(np.abs(TRPL_fit)), p0=(4, np.amax(TRPL_data)))
-    # perr = np.sqrt(np.diag(pcov))
 
     TRPL_out = np.exp(Exp1(time_fit,*popt))
     label =  r'$\tau:\ $' + np.array2string(popt[1], precision=2, separator=',', suppress_small=True) + ' ns'
 
-    return TRPL_out, time_fit, label, popt
+    return TRPL_out, time_fit, label
 
 def where_closest(x : list, x0):
     

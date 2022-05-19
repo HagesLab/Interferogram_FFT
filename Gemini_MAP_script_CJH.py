@@ -19,7 +19,7 @@ from scipy import ndimage
 from scipy.integrate import simpson
 import ast
 
-path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220512\150059"
+path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220512\122427"
 params_from_INTR_metadata = True        #Import metadata from "...Averaged_MAP..." script - if not using this there may be bugs.
 save_data = True                        #Save all plots and TRES data
 ImportTRES = True                      #Use this to prevent recalcualting the FFT - must have "..TRES.h5" already savded
@@ -262,23 +262,14 @@ for i in range(len(rangevalTRPL)):
 if FitTRPL:
     TRPL_fit_list, time_fit_list, fit_label_list = [],[],[]
     
-    for i in range(len(fit_range)):
-        TRPL_fit, time_fit, fit_label, popt = Fit_1exp(integralTRPL[0],time_data,fit_range[i])
+    for i in range(len(integralTRPL)):
+        TRPL_fit, time_fit, fit_label = Fit_1exp(integralTRPL[i],time_data,fit_range[i])
         TRPL_fit = list(TRPL_fit)
         time_fit = list(time_fit)
         fit_label = list(fit_label)
         TRPL_fit_list.append(TRPL_fit)
         time_fit_list.append(time_fit)
         fit_label_list.append(fit_label)
-    
-    # for i in range(len(integralTRPL)):
-    #     TRPL_fit, time_fit, fit_label, popt, perr = Fit_1exp(integralTRPL[i],time_data,fit_range[i])
-    #     TRPL_fit = list(TRPL_fit)
-    #     time_fit = list(time_fit)
-    #     fit_label = list(fit_label)
-    #     TRPL_fit_list.append(TRPL_fit)
-    #     time_fit_list.append(time_fit)
-    #     fit_label_list.append(fit_label)
         
     fit = (time_fit_list, TRPL_fit_list, fit_label_list)
         
@@ -292,12 +283,12 @@ timemesh, wavemesh = np.meshgrid(WLPlot,tplot)
 TRES=build_TRES[indext[0]:indext[1],indexWL[0]:indexWL[1]]
 TRES = np.where(TRES<min_value,min_value,TRES)
 
-#plot_TRES(timemesh, wavemesh, TRES, Gauss_Filter=Gauss_Filter, sigma=sigmaval)
+plot_TRES(timemesh, wavemesh, TRES, Gauss_Filter=Gauss_Filter, sigma=sigmaval)
 
 # Plot averaged PL
 PLname = os.path.join(path, '{}_PLPlot.png'.format(exper_ID))
 labels = ["{} to {} ns".format(PL_range[0], PL_range[1]) for PL_range in rangevalPL]
-##plot_PL_spectrum(wave, averaged_PL_spec, labels, PLRange[0], PLRange[1], export=PLname)
+plot_PL_spectrum(wave, averaged_PL_spec, labels, PLRange[0], PLRange[1], export=PLname)
 
 # Plot averaged TRPL
 if AverageTRPL:
@@ -311,8 +302,8 @@ else:
     start_time, end_time = timeRange[0], timeRange[1]
     
 PLname = os.path.join(path, '{}_TRPLPlot.png'.format(exper_ID))
-# plot_TRPL_decay(time_data, integralTRPL, TRPLmin_OM, labels=labels, 
-#                 start_time=start_time, end_time=end_time, export=PLname)
+plot_TRPL_decay(time_data, integralTRPL, TRPLmin_OM, labels=labels, 
+                start_time=start_time, end_time=end_time, export=PLname)
 
 if FitTRPL:
     TRPLFitname = os.path.join(path, '{}_TRPLFitPlot.png'.format(exper_ID))

@@ -42,9 +42,9 @@ def plot_PL_spectrum(waves, spectra, labels, start_wave, end_wave, export=None, 
 def plot_TRPL_decay(times, trpl, min_OM, labels=None, start_time=None, end_time=None, 
                     fit=None, export=None, interval=None):
     fig, ax = plt.subplots(dpi=120)
-    ax.plot(times,trpl[0],label=None)
-    for i in range(len(fit[0])):
-        # ax.plot(times,trpl[i],label=labels[i])
+    
+    for i in range(len(trpl)):
+        ax.plot(times,trpl[i],label=labels[i])
         
         if fit is not None:
             ax.plot(fit[0][i], fit[1][i], 'k--', label=''.join(fit[2][i]))
