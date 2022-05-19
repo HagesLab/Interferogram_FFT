@@ -87,14 +87,14 @@ def apply_norm_spec(norm_fname, data_fname, data_oname=None, show=True):
     
 
 if __name__ == "__main__":
-    min_w = 550
-    max_w = 800
-    norm_fname = "cuvet_norm_0.txt"
-    mode = "a" # "(m)ake" or "(a)pply"
+    min_w = 500
+    max_w = 900
+    norm_fname = "cuvet_norm_new.txt"
+    mode = "m" # "(m)ake" or "(a)pply"
     
-    lamp_fname = os.path.join("F:", "1910019-NIR-CCVISNIR.txt")
-    resp_fname = os.path.join(r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220510\100111", 
-                              "100111_PLdata.csv")
+    lamp_fname = os.path.join(r"R:\Hages-Lab\TRPL Data", "1910019-NIR-CCVISNIR.txt")
+    resp_fname = os.path.join(r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220512\181605", 
+                              "181605_PLdata.csv")
     
     data_fname = os.path.join(r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220509\170820",
                   "170820_PLdata.csv")

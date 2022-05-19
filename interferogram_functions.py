@@ -332,14 +332,21 @@ def Fit_1exp(TRPL_data,time_data,fitrange):
     low_index, high_index = (np.abs(time_data-np.min(fitrange))).argmin() , (np.abs(time_data-np.max(fitrange))).argmin()
     TRPL_fit = TRPL_data[low_index:high_index]
     time_fit = time_data[low_index:high_index]
+    
+    from numpy.polynomial import Polynomial
+    p = Polynomial.fit(time_fit, np.log(np.abs(TRPL_fit)), 1)
+    
+    popt = p.convert().coef
+    popt[1] = -1 / popt[1]
+    popt[0] = np.exp(popt[0])
 
-    popt, pcov = curve_fit(Exp1,time_fit,np.log(np.abs(TRPL_fit)))
-    perr = np.sqrt(np.diag(pcov))
+    # popt, pcov = curve_fit(Exp1,time_fit,np.log(np.abs(TRPL_fit)), p0=(4, np.amax(TRPL_data)))
+    # perr = np.sqrt(np.diag(pcov))
 
     TRPL_out = np.exp(Exp1(time_fit,*popt))
     label =  r'$\tau:\ $' + np.array2string(popt[1], precision=2, separator=',', suppress_small=True) + ' ns'
 
-    return TRPL_out, time_fit, label, popt, perr
+    return TRPL_out, time_fit, label, popt
 
 def where_closest(x : list, x0):
     

@@ -15,7 +15,7 @@ import numpy as np
 from numpy import savetxt
 import os
 
-path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220512\234639"
+path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220512\122427"
 save_params = 1          #Use this to create a txt file that can be imported into the "..._MAP_script"
 export_PL = 1            # Save a .csv of wavelength/PL datasets - one PL per apodization
 export_TRPL = 1            # Save a .csv of the avereraged Time/PL dataset
@@ -23,7 +23,7 @@ export_TRPL = 1            # Save a .csv of the avereraged Time/PL dataset
 transfer_func = True     # Normalize by a transfer function specific to the optical path
 BKGsub = True               #Background Subtract - Generally True
 bkg_limit = -3              #ns before the TRPL peak to average the background data up to - see plot
-start_wave = 500           #For Plotting
+start_wave = 565           #For Plotting
 end_wave = 800             #For Plotting
 pltzoomstate = False        #Zoom in around the zero position in interferogram to better observe oscillations
 pltzoomrange = [-.25,.25]   #Range to zoom in on if pltzoomstate=True

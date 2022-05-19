@@ -14,7 +14,7 @@ import os
 import numpy as np
 from numpy import savetxt
 
-path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220510/100111"
+path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220512/181605"
 
 # path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20211105/115108"
 #path = r"F:\PL\Tao\20211012\125809"
