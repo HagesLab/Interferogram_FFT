@@ -9,34 +9,13 @@ import Interf_calibration1D
 from scipy.interpolate import interp1d
 import Interf_calibration2D
 import matplotlib.pyplot as plt
-import glob
-import csv
 import os
 import pandas as pd
-from scipy.optimize import curve_fit
+from numpy.polynomial import Polynomial
 try:
     from BaselineRemoval import BaselineRemoval
 except ModuleNotFoundError:
     print("Warning: BaselineRemoval library not found")
-
-def import_INTR(path):
-    allFiles = []
-    b = glob.glob(path + "/*.txt")  # glob. lists the filename and path
-    allFiles.extend(b)
-
-    for i in range(len(allFiles)):
-        namestest = allFiles[i].split('_')[-1]
-        if namestest == r"POS.txt":
-            with open(allFiles[i],'r') as j:
-                pos_data = np.array(list(csv.reader(j,delimiter="\t")),dtype='float')[0,:]
-                samplename = os.path.split(allFiles[i])[-1].split(".")[0]
-                samplename = samplename.replace("_POS","")
-        elif namestest == r"INTR.txt":
-            with open(allFiles[i],'r') as j:
-                intr_data = np.array(list(csv.reader(j,delimiter="\t")),dtype='float')[0,:]
-    return pos_data, intr_data
-
-
 
 def prep_interferogram(pos_data,intr_data,apodization_width,apod_type="BH",mean_sub=True,resample=True,resample_factor=4,shift=False,pad_test=True,padfactor=15,plots=True,pltzoom=False,zoom_range=[-.25,0.25],baseline_sub_state=False):
     intr_data, pos_data = Interf_calibration1D.interf_calibration1D(intr_data,pos_data)
@@ -172,6 +151,7 @@ def FFT_intr(preFFT_pos,preFFT_data, plots=False,correct=True,scale="linear"):
         FFT_imag_full_raw = FFT_intr_full.imag
         FFT_final_full = np.sqrt(FFT_real_full_raw**2 + FFT_imag_full_raw**2)
         
+    
     # Trim according to calibrations
     freq_trim = freq[select]
     FFT_intr_trim_full = FFT_final_full[select]
@@ -200,34 +180,6 @@ def FFT_intr(preFFT_pos,preFFT_data, plots=False,correct=True,scale="linear"):
         plt.legend()
 
     return wave, FFT_intr_trim_full.reshape((1,len(FFT_intr_trim_full)))[0]
-
-def import_MAP(path):
-    allFiles = []
-    b = glob.glob(path + "/*.txt")  # glob. lists the filename and path
-    allFiles.extend(b)
-
-
-    for i in range(len(allFiles)):
-        namestest = allFiles[i].split('_')[-1]
-        if namestest == r"MAP.txt":
-            with open(allFiles[i],'r') as j:
-                map_data = np.array(list(csv.reader(j,delimiter="\t")),dtype='float')
-        elif namestest == r"POS.txt":
-            with open(allFiles[i],'r') as j:
-                pos_data = np.array(list(csv.reader(j,delimiter="\t")),dtype='float')[0,:]
-                samplename = os.path.split(allFiles[i])[-1].split(".")[0]
-                samplename = samplename.replace("_POS","")
-        elif namestest == r"TIME.txt":
-            with open(allFiles[i],'r') as j:
-                time_data = np.array(list(csv.reader(j,delimiter="\t")),dtype='float')[0,:]
-
-    # Discard the zero columns
-    standard=np.std(map_data, axis=0)
-    indexes=np.asarray(np.nonzero(standard))
-    map_data=map_data[:,indexes[0][0]:indexes[0][-1]]
-    time_data =time_data[indexes[0][0]:indexes[0][-1]]/1e3
-
-    return pos_data, time_data, map_data
 
 #Need to add baseline subtraction to MAP
 def prep_map(pos_data,map_data,apodization_width,apod_type="BH",resample=True,resample_factor=2,shift=False,pad_test=True,padfactor=4,mean_sub=True):
@@ -282,15 +234,16 @@ def prep_map(pos_data,map_data,apodization_width,apod_type="BH",resample=True,re
         preFFT_data, preFFT_pos = np.concatenate((right_axis_intr,left_axis_intr)), np.concatenate((right_axis_pos,left_axis_pos))
         prep_build.append(preFFT_data)
 
-    return preFFT_pos, np.array(prep_build,dtype='float').T
+    prep_build = np.array(prep_build, dtype='float').T
+    return preFFT_pos, prep_build
 
-def FFT_map(preFFT_pos,preFFT_data, plots=False,correct=True,scale="linear"):
+def FFT_map(FFT_pos,FFT_data, plots=False,correct=False,scale="linear"):
     # Treat single TS 1D case as 2D case
-    if preFFT_data.ndim == 1:
-        preFFT_data = preFFT_data.reshape((len(preFFT_data),1))
+    if FFT_data.ndim == 1:
+        FFT_data = FFT_data.reshape((len(FFT_data),1))
 
     #Do as much preparation outside of the loop over preFFT_data's timesteps as possible
-    freq = np.fft.rfftfreq(preFFT_pos.shape[-1],np.diff(preFFT_pos)[0])
+    freq = np.fft.rfftfreq(FFT_pos.shape[-1],np.diff(FFT_pos)[0])
 
     #Import calibration for WL
     items = os.listdir(".")
@@ -310,24 +263,25 @@ def FFT_map(preFFT_pos,preFFT_data, plots=False,correct=True,scale="linear"):
     fn = interp1d(reciprocal, wavelength, kind="linear")
 
     # Do FFT on the data
-    FFT_intr_full = np.fft.rfft(preFFT_data, axis=0)
+    FFT_data = np.fft.rfft(FFT_data, axis=0)
 
     if correct:
         #Phase Corrected
-        FFT_real_full_raw = FFT_intr_full.real
-        FFT_imag_full_raw = FFT_intr_full.imag
-        FFT_final_full_raw = np.sqrt(FFT_real_full_raw**2 + FFT_imag_full_raw**2)
-        FFT_real_full = FFT_intr_full.real*np.cos(np.angle(FFT_intr_full))
-        FFT_imag_full = FFT_intr_full.imag*np.sin(np.angle(FFT_intr_full))
+        # FIXME: this should match FFT_intr
+        # FFT_real_full_raw = FFT_data.real
+        # FFT_imag_full_raw = FFT_data.imag
+        # FFT_final_full_raw = np.sqrt(FFT_real_full_raw**2 + FFT_imag_full_raw**2)
+        FFT_real_full = FFT_data.real*np.cos(np.angle(FFT_data))
+        FFT_imag_full = FFT_data.imag*np.sin(np.angle(FFT_data))
         FFT_final_full = np.sqrt(FFT_real_full**2 + FFT_imag_full**2)
     else:
-        FFT_real_full = FFT_intr_full.real
-        FFT_imag_full = FFT_intr_full.imag
-        FFT_final_full = np.sqrt(FFT_real_full**2 + FFT_imag_full**2)
+        #FFT_data = np.sqrt(FFT_data.real**2 + FFT_data.imag**2)
+        FFT_data = np.abs(FFT_data) # equivalent to real^2+imag^2
+        
 
     # Trim according to calibrations
     freq_trim = freq[select]
-    FFT_intr_trim_full = FFT_final_full[select]
+    #FFT_intr_trim_full = FFT_data[select]
 
     #Compute WL
     wave = fn(freq_trim)
@@ -347,13 +301,13 @@ def FFT_map(preFFT_pos,preFFT_data, plots=False,correct=True,scale="linear"):
             plt.xlabel("Wavelength (nm)")
             plt.legend()
 
-        FFT_real = FFT_real_full[select]
-        FFT_imag = FFT_imag_full[select]
+        # FFT_real = FFT_data.real[select]
+        # FFT_imag = FFT_data.imag[select]
 
         plt.figure(1, dpi=120)
-        plt.plot(wave,FFT_intr_trim_full,"--",label="Full")
-        plt.plot(wave,FFT_real,label="Real")
-        plt.plot(wave,FFT_imag,label="Imag")
+        plt.plot(wave,FFT_data[select],"--",label="Full")
+        plt.plot(wave,FFT_data.real[select],label="Real")
+        plt.plot(wave,FFT_data.imag[select],label="Imag")
         plt.yscale(scale)
         if correct:
             plt.title("Phase Corrected FFT")
@@ -362,28 +316,9 @@ def FFT_map(preFFT_pos,preFFT_data, plots=False,correct=True,scale="linear"):
         plt.xlabel("Wavelength (nm)")
         plt.legend()
 
-    return wave, FFT_intr_trim_full
+    return wave, FFT_data[select]
 
 
-def fetch_metadata(dir_name,openfile):  #  "{}\\Param_Import_metadata.txt"  or "{}\\Plot_Params.txt"
-    with open(openfile.format(dir_name), "r") as ifstream:
-        param_values_dict = {}
-        for line in ifstream:
-            if "#" in line: continue
-
-            else:
-                param = line[0:line.find(':')]
-                new_value = line[line.find('\t') + 1:].strip('\n')
-
-                try:
-                    if "." in new_value:
-                        param_values_dict[param] = float(new_value)
-                    else:
-                        param_values_dict[param] = int(new_value)
-                except:
-                    param_values_dict[param] = str(new_value)
-
-    return param_values_dict
 
 #Fit TRPL
 def Fit_1exp(TRPL_data,time_data,fitrange):
@@ -395,11 +330,22 @@ def Fit_1exp(TRPL_data,time_data,fitrange):
     low_index, high_index = (np.abs(time_data-np.min(fitrange))).argmin() , (np.abs(time_data-np.max(fitrange))).argmin()
     TRPL_fit = TRPL_data[low_index:high_index]
     time_fit = time_data[low_index:high_index]
+    
+    p = Polynomial.fit(time_fit, np.log(np.abs(TRPL_fit)), 1)
+    popt = p.convert().coef
+    popt[1] = -1 / popt[1]
+    popt[0] = np.exp(popt[0])
 
-    popt, pcov = curve_fit(Exp1,time_fit,np.log(np.abs(TRPL_fit)))
-    perr = np.sqrt(np.diag(pcov))
 
     TRPL_out = np.exp(Exp1(time_fit,*popt))
     label =  r'$\tau:\ $' + np.array2string(popt[1], precision=2, separator=',', suppress_small=True) + ' ns'
 
-    return TRPL_out, time_fit, label, popt, perr
+    return TRPL_out, time_fit, label
+
+def where_closest(x : list, x0):
+    
+    if isinstance(x0, (int, float)):
+        return (np.abs(x - x0)).argmin()
+    
+    elif isinstance(x0, (list, tuple, np.ndarray)):
+        return [(np.abs(x - xi)).argmin() for xi in x0]
