@@ -13,16 +13,14 @@ import numpy as np
 import time
 import h5py
 import os
-import matplotlib.colors
-from matplotlib.ticker import LogLocator
-from scipy import ndimage
+
 from scipy.integrate import simpson
 import ast
 
-path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220512\122427"
+path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220519\154459"
 params_from_INTR_metadata = True        #Import metadata from "...Averaged_MAP..." script - if not using this there may be bugs.
 save_data = True                        #Save all plots and TRES data
-ImportTRES = True                      #Use this to prevent recalcualting the FFT - must have "..TRES.h5" already savded
+ImportTRES = False                     #Use this to prevent recalcualting the FFT - must have "..TRES.h5" already savded
 
 # =============================================================================
 # If not importing TRES data
@@ -57,8 +55,9 @@ shift_factor = 0.005837467299965371       #Hard to compute shift on time-resolve
 # =============================================================================
 
 #All Plots
-timeRange = [-10,60]
-PLRange = [565.,800.]
+timeRange = [-10,80]
+PLRange = [560.,800.]
+transfer_func = True
 
 #TRES
 min_value = 0.001
@@ -67,16 +66,16 @@ sigmaval = 2   #For Gauss Filter
 
 #PL Plot
 AveragePL = False
-rangevalPL = [[0,1],[4,20]]  #ns
-NormPL = False
+rangevalPL = [[0,2],[10,20]]  #ns
+NormPL = 0
 
 #TRPL Plot
-Usemapdata= False      #To maximize TRPL decay - does the same as the Averaged_MAP script
-transfer_func = True # Only if not using mapdata
+Usemapdata= True      #To maximize TRPL decay - does the same as the Averaged_MAP script
+
 norm_fname = "cuvet_norm_new.txt"
 
-AverageTRPL = False                    #Only if not using mapdata
-rangevalTRPL = []  #nm    #Only if not using mapdata
+AverageTRPL = False                   #Only if not using mapdata
+rangevalTRPL = [[520,540], [590,620]]  #nm    #Only if not using mapdata
 NormTRPL = False
 BKGTRPL = True
 TRPLmin_OM = 1e-4
@@ -84,8 +83,9 @@ overrideTRPLrange = False    #For standalone TRPL plot
 overidexrange = [-10,1000]    #Only if overriding range
 
 #Fitting TRPL
-FitTRPL = True
-fit_range = [[i-1,i+1] for i in range(2, 30, 2)]   #List length must match that of rangeValTRPL / if mapdata then length 1
+FitTRPL = False
+#fit_range = [[i-1,i+1] for i in range(2, 30, 2)]   #List length must match that of rangeValTRPL / if mapdata then length 1
+fit_range = [[20,30]]
 fit_on_TRES = True
 
 #Composite TRES

@@ -9,24 +9,26 @@ Created on Mon Nov 30 11:37:33 2020
 from interferogram_functions import prep_interferogram,  FFT_intr
 from interferogram_io import save_metadata, save_PL, import_INTR
 from interferogram_vis import plot_PL_spectrum
+from make_norm_spec import load_spectrum, interp
 import matplotlib.pyplot as plt
 import os
 import numpy as np
 from numpy import savetxt
 
-path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220512/181605"
+path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220519/225758"
 
 # path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20211105/115108"
 #path = r"F:\PL\Tao\20211012\125809"
-save_params = True          #Use this to create a txt file that can be imported into the "..._MP_script" and export Plots
-export_PL = True             # Save a .csv of wavelength/PL datasets - one PL per apodization
+save_params = False          #Use this to create a txt file that can be imported into the "..._MP_script" and export Plots
+export_PL = False             # Save a .csv of wavelength/PL datasets - one PL per apodization
 
-start_wave =500           #For Plotting - keep in mind the LP filter value
-end_wave = 800             #For Plotting
+transfer_func = True
+start_wave =560           #For Plotting - keep in mind the LP filter value
+end_wave = 900            #For Plotting
 pltzoomstate = False        #Zoom in around the zero position in interferogram to better observe oscillations
 pltzoomrange = [-.25,.25]   #Range to zoom in on if pltzoomstate=True
 
-apodization_width=[0.5]     #Bounds (negative to positive) outside of which the data = 0, should be a list. Use many values in the list to compare Apod widths
+apodization_width=[0.5, 1, 4, 10, 100]     #Bounds (negative to positive) outside of which the data = 0, should be a list. Use many values in the list to compare Apod widths
 apod_type="BH"              #Function to use for apodization: "None" "Gauss" "Triangle" "Boxcar" or "BH" (Default)
 resample = True             #Enhance resolution by cubic interpolation
 resample_factor=4           #Factor to increase data points by
@@ -44,11 +46,24 @@ plots = True               #Deactivate plots from FFT and prep - useful if using
 exper_ID = os.path.split(path)[-1]
 pos_data, intr_data = import_INTR(path)
 
+if transfer_func:
+    norm_fname = "cuvet_norm_new.txt"
+    norm_waves, norm = load_spectrum(norm_fname)
+    norm_waves, norm = interp(norm_waves, norm, start_wave, end_wave, 1)
+
 wave_list, FFT_intr_trim_list = [], []
 for i in range(len(apodization_width)):
     preFFT_pos, preFFT_data, shiftfactor, baseline_fit = prep_interferogram(pos_data,intr_data,apodization_width[i],apod_type=apod_type,resample=resample,resample_factor=resample_factor,shift=shift,pad_test=pad_test,padfactor=padfactor,mean_sub=mean_sub,plots=plots,pltzoom=pltzoomstate,zoom_range=pltzoomrange,baseline_sub_state=baseline_sub_state)
     wave, FFT_intr_trim = FFT_intr(preFFT_pos,preFFT_data,plots=True,scale="linear",correct=False)
-    wave_list.append(wave)
+    
+    if transfer_func:
+        wave, FFT_intr_trim = interp(wave, FFT_intr_trim, start_wave, end_wave, 1)
+        FFT_intr_trim /= norm
+        
+        wave_list.append(norm_waves)
+    else:
+        wave_list.append(wave)
+        
     FFT_intr_trim_list.append(FFT_intr_trim)
 
 #Plot Full PL

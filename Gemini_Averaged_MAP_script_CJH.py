@@ -15,7 +15,7 @@ import numpy as np
 from numpy import savetxt
 import os
 
-path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220512\122427"
+path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220519\225758"
 save_params = 1          #Use this to create a txt file that can be imported into the "..._MAP_script"
 export_PL = 1            # Save a .csv of wavelength/PL datasets - one PL per apodization
 export_TRPL = 1            # Save a .csv of the avereraged Time/PL dataset
@@ -23,12 +23,12 @@ export_TRPL = 1            # Save a .csv of the avereraged Time/PL dataset
 transfer_func = True     # Normalize by a transfer function specific to the optical path
 BKGsub = True               #Background Subtract - Generally True
 bkg_limit = -3              #ns before the TRPL peak to average the background data up to - see plot
-start_wave = 565           #For Plotting
+start_wave = 500           #For Plotting
 end_wave = 800             #For Plotting
 pltzoomstate = False        #Zoom in around the zero position in interferogram to better observe oscillations
 pltzoomrange = [-.25,.25]   #Range to zoom in on if pltzoomstate=True
 
-apodization_width=[0.5]     #Bounds (negative to positive) outside of which the data = 0, should be a list. Use many values in the list to compare Apod widths. It will only save the first value in metadata for MAP_script!
+apodization_width=[0.7]     #Bounds (negative to positive) outside of which the data = 0, should be a list. Use many values in the list to compare Apod widths. It will only save the first value in metadata for MAP_script!
 apod_type="BH"              #Function to use for apodization: "None" "Gauss" "Triangle" "Boxcar" or "BH" (Default)
 resample = True             #Enhance resolution by cubic interpolation
 resample_factor=4           #Factor to increase data points by
@@ -102,27 +102,27 @@ for i in range(len(apodization_width)):
         
     FFT_intr_trim_list.append(FFT_intr_trim)
 
-if transfer_func:
-    print("transfer")
-    preFFT_pos, preFFT_map = prep_map(pos_data,map_data,apodization_width[0],apod_type,resample,resample_factor,shift,pad_test,padfactor,mean_sub)
-    FFT_wave, FFT_map = FFT_map(preFFT_pos, preFFT_map)
-    FFT_wave=FFT_wave[::-1]
-    FFT_map = np.fliplr(np.array(FFT_map,dtype="float").T)
+# if transfer_func:
+#     print("transfer")
+#     preFFT_pos, preFFT_map = prep_map(pos_data,map_data,apodization_width[0],apod_type,resample,resample_factor,shift,pad_test,padfactor,mean_sub)
+#     FFT_wave, FFT_map = FFT_map(preFFT_pos, preFFT_map)
+#     FFT_wave=FFT_wave[::-1]
+#     FFT_map = np.fliplr(np.array(FFT_map,dtype="float").T)
     
-    FFT_wave, FFT_map = interp(FFT_wave, FFT_map.T, start_wave, end_wave, 1)
+#     FFT_wave, FFT_map = interp(FFT_wave, FFT_map.T, start_wave, end_wave, 1)
 
     
-    FFT_map = (FFT_map.T / norm).T
+#     FFT_map = (FFT_map.T / norm).T
 
-    integralTRPL = simpson(FFT_map, x=FFT_wave, axis=0)
-    if BKGsub:
-        index = where_closest(time_data, BKGrange)
-        BKGval = np.mean(integralTRPL[index[0]:index[1]])
-        integralTRPL = integralTRPL - BKGval
+#     integralTRPL = simpson(FFT_map, x=FFT_wave, axis=0)
+#     if BKGsub:
+#         index = where_closest(time_data, BKGrange)
+#         BKGval = np.mean(integralTRPL[index[0]:index[1]])
+#         integralTRPL = integralTRPL - BKGval
         
             
-else:
-    integralTRPL = np.sum(map_data,axis=0)
+# else:
+integralTRPL = np.sum(map_data,axis=0)
 
 #Plot Full TRPL
 PLname = os.path.join(path, '{}_TRPLPlot.png'.format(exper_ID))
