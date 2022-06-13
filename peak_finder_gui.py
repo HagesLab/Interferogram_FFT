@@ -179,9 +179,10 @@ class tkApp:
         
     def load(self):
         print("Loaded plot")
-        self.data["has_data"] = False
         try:        
             fname = tk.filedialog.askdirectory(title="Select MAP data directory")
+            if fname == "":
+                return
             self.data["pos"], self.data["time"], self.data["map"] = import_MAP(fname)
             self.data["has_data"] = True
         except Exception:
