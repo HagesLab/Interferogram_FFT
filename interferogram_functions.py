@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 import os
 import pandas as pd
 from numpy.polynomial import Polynomial
+from scipy.optimize import curve_fit
+
 try:
     from BaselineRemoval import BaselineRemoval
 except ModuleNotFoundError:
@@ -341,6 +343,38 @@ def Fit_1exp(TRPL_data,time_data,fitrange):
     label =  r'$\tau:\ $' + np.array2string(popt[1], precision=2, separator=',', suppress_small=True) + ' ns'
 
     return TRPL_out, time_fit, label
+
+def Fit_2exp(TRPL_data,time_data,fitrange):
+
+    def Exp2(time,A,tau,B, tau2):
+        # Log scale prevents overweighting of higher magnitude points
+        return np.log(A * np.exp(-time/tau) + B * np.exp(-time/tau2))
+
+    #trim-data
+    low_index, high_index = (np.abs(time_data-np.min(fitrange))).argmin() , (np.abs(time_data-np.max(fitrange))).argmin()
+    TRPL_fit = TRPL_data[low_index:high_index]
+    time_fit = time_data[low_index:high_index]
+
+    popt, pcov = curve_fit(Exp2,time_fit,np.log(np.abs(TRPL_fit)))
+    perr = np.sqrt(np.diag(pcov))
+
+    TRPL_out = np.exp(Exp2(time_fit,*popt))
+    tau1 = popt[3]
+    tau2 = popt[1]
+    C1 = popt[2]
+    C2 = popt[0]
+    
+    if tau1 > tau2:
+        # Swap so tau1 always the smallest
+        tau2, tau1 = tau1, tau2
+        C2, C1 = C1, C2
+    
+    taustat = (C1*tau1+C2*tau2) / (C1+C2)
+    
+    label =  r'$\tau_1:\ $ {:.2f} ns, $\tau_2:\ $ {:.2f} ns, '.format(tau1, tau2)
+    label += r"$\tau_{stat}:\ $" + "{:.2f} ns".format(taustat)
+
+    return TRPL_out, time_fit, label, popt, perr
 
 def where_closest(x : list, x0):
     
