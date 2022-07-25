@@ -376,6 +376,32 @@ def Fit_2exp(TRPL_data,time_data,fitrange):
 
     return TRPL_out, time_fit, label, popt, perr
 
+def RR(time,log_B, log_dN0):
+    # See Ahrenkiel book pp. 64
+    # Log scale prevents overweighting of higher magnitude points
+    return log_B + 2*log_dN0 - 2*np.log(1+np.exp(log_B + log_dN0)*time) + np.log(2000e-7)
+
+def Fit_RR(TRPL_data,time_data,fitrange):
+    # time_data in [s] required!
+
+    #trim-data
+    low_index, high_index = (np.abs(time_data-np.min(fitrange))).argmin() , (np.abs(time_data-np.max(fitrange))).argmin()
+    TRPL_fit = TRPL_data[low_index:high_index]
+    time_fit = time_data[low_index:high_index]
+
+    popt, pcov = curve_fit(RR,time_fit,np.log(np.abs(TRPL_fit)))
+    perr = np.sqrt(np.diag(pcov))
+
+
+    dN0 = np.exp(popt[1])
+    B = np.exp(popt[0])
+    TRPL_out = np.exp(RR(time_fit,*popt))
+    
+    
+    label =  r'$B:\ $ {:.2e}'.format(B) + r' $\mathrm{cm^3 s^{-1}}$' + ' $\Delta N_0:\ $ {:.2e}'.format(dN0) + r' $\mathrm{cm^{-3}}$'
+    
+    return TRPL_out, time_fit, label, popt, perr
+
 def where_closest(x : list, x0):
     
     if isinstance(x0, (int, float)):
