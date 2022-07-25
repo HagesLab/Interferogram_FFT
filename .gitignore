@@ -1,6 +1,7 @@
 
 __pycache__/interferogram_functions.cpython-38.pyc
 __pycache__/make_norm_spec.cpython-38.pyc
+__pycache__/*
 *.pyc
 *.npy
 *.txt
