@@ -87,20 +87,37 @@ def apply_norm_spec(norm_fname, data_fname, data_oname=None, show=True):
     
 
 if __name__ == "__main__":
+    """ 
+    Create a new transfer function / calibration spectrum for use with 
+    INTR and MAP scripts.
+    
+    1. First measure an interferogram from a calibration source with known spectrum
+    lamp_fname. Spectra for various sources can be found on the elab notebook.
+    
+    2. Generate a PLdata.csv spectrum from the measured interferogram using the INTR script. 
+    Set this as the "response data" resp_fname.
+    
+    3. Set the wavelength range [min_w, max_w], a name for the new spectrum
+    norm_fname, and set mode to 'm'
+    
+    This script can also be used to apply an existing transfer function to PL data -
+    set mode to 'a', the PL data data_fname, and an output location data_oname
+    
+    """
+    
     min_w = 500
     max_w = 900
-    norm_fname = "cuvet_norm_new.txt"
-    mode = "m" # "(m)ake" or "(a)pply"
+    norm_fname = r"Z:\Data\PL\Transfer functions\Micro - Intf - Vis\microPL_vis_intf.txt"
+    mode = "a" # "(m)ake" or "(a)pply"
     
-    lamp_fname = os.path.join(r"R:\Hages-Lab\TRPL Data", "1910019-NIR-CCVISNIR.txt")
-    resp_fname = os.path.join(r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220512\181605", 
-                              "181605_PLdata.csv")
+    lamp_fname = os.path.join(r"Z:\TRPL Data", "1910019-NIR-CCVISNIR.txt")
+    resp_fname = os.path.join(r"Z:\Data\PL\Ruiquan-JN powders\20220720\transfer_func\101508\101508_PLdata.csv")
     
-    data_fname = os.path.join(r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220509\170820",
-                  "170820_PLdata.csv")
+    data_fname = os.path.join(r"Z:\Data\PL\Ruiquan BaZrS3 diagnostics\20220804\JN-21 3 hr\154503",
+                  "154503_PLdata.csv")
 
-    data_oname = os.path.join(r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220509\170820",
-                      "170820_PLdata_norm.txt")
+    data_oname = os.path.join(r"Z:\Data\PL\Ruiquan BaZrS3 diagnostics\20220804\JN-21 3 hr\154503",
+                      "154503_PLdata_norm.txt")
 
     
     if mode == "m":
