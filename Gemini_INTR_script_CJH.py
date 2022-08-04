@@ -15,20 +15,22 @@ import os
 import numpy as np
 from numpy import savetxt
 
-path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220519/225758"
+
+path = r"Z:\Data\PL\Ruiquan BaZrS3 diagnostics\20220803\131820"
+
 
 # path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20211105/115108"
 #path = r"F:\PL\Tao\20211012\125809"
-save_params = False          #Use this to create a txt file that can be imported into the "..._MP_script" and export Plots
-export_PL = False             # Save a .csv of wavelength/PL datasets - one PL per apodization
+save_params = True          #Use this to create a txt file that can be imported into the "..._MP_script" and export Plots
+export_PL = True             # Save a .csv of wavelength/PL datasets - one PL per apodization
 
-transfer_func = True
-start_wave =560           #For Plotting - keep in mind the LP filter value
+transfer_func = 0
+start_wave =500           #For Plotting - keep in mind the LP filter value
 end_wave = 900            #For Plotting
 pltzoomstate = False        #Zoom in around the zero position in interferogram to better observe oscillations
 pltzoomrange = [-.25,.25]   #Range to zoom in on if pltzoomstate=True
 
-apodization_width=[0.5, 1, 4, 10, 100]     #Bounds (negative to positive) outside of which the data = 0, should be a list. Use many values in the list to compare Apod widths
+apodization_width=[0.4]     #Bounds (negative to positive) outside of which the data = 0, should be a list. Use many values in the list to compare Apod widths
 apod_type="BH"              #Function to use for apodization: "None" "Gauss" "Triangle" "Boxcar" or "BH" (Default)
 resample = True             #Enhance resolution by cubic interpolation
 resample_factor=4           #Factor to increase data points by
@@ -47,7 +49,7 @@ exper_ID = os.path.split(path)[-1]
 pos_data, intr_data = import_INTR(path)
 
 if transfer_func:
-    norm_fname = "cuvet_norm_new.txt"
+    norm_fname = os.path.join(r"Z:\TRPL Data", "cuvet_norm_new_ext.txt")
     norm_waves, norm = load_spectrum(norm_fname)
     norm_waves, norm = interp(norm_waves, norm, start_wave, end_wave, 1)
 
@@ -62,6 +64,7 @@ for i in range(len(apodization_width)):
         
         wave_list.append(norm_waves)
     else:
+        wave, FFT_intr_trim = interp(wave, FFT_intr_trim, math.ceil(np.amin(wave)), math.floor(np.amax(wave)), 1)
         wave_list.append(wave)
         
     FFT_intr_trim_list.append(FFT_intr_trim)
@@ -70,7 +73,8 @@ for i in range(len(apodization_width)):
 PLname = os.path.join(path, '{}_PLPlot.png'.format(exper_ID))
 labels = ['{} Apod {} mm'.format(apod_type, apod) for apod in apodization_width]
 plot_PL_spectrum(wave_list, FFT_intr_trim_list, labels, start_wave, end_wave, export=PLname)
-
+where_max = np.argmax(FFT_intr_trim_list[0])
+print(wave_list[0][where_max])
 ##### The Raman Zone #####
 # def wl_to_raman(wl_exc, wl):
 #     return (1e7*(wl_exc**-1 - wl**-1))

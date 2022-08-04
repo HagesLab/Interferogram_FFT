@@ -12,23 +12,24 @@ from scipy.integrate import simpson
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 import numpy as np
+import math
 from numpy import savetxt
 import os
 
-path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220519\225758"
+path = r"Z:\Data\PL\Ruiquan BaZrS3 diagnostics\20220802\163134"
 save_params = 1          #Use this to create a txt file that can be imported into the "..._MAP_script"
 export_PL = 1            # Save a .csv of wavelength/PL datasets - one PL per apodization
 export_TRPL = 1            # Save a .csv of the avereraged Time/PL dataset
 
-transfer_func = True     # Normalize by a transfer function specific to the optical path
+transfer_func = False     # Normalize by a transfer function specific to the optical path
 BKGsub = True               #Background Subtract - Generally True
 bkg_limit = -3              #ns before the TRPL peak to average the background data up to - see plot
 start_wave = 500           #For Plotting
-end_wave = 800             #For Plotting
+end_wave = 900             #For Plotting
 pltzoomstate = False        #Zoom in around the zero position in interferogram to better observe oscillations
 pltzoomrange = [-.25,.25]   #Range to zoom in on if pltzoomstate=True
 
-apodization_width=[0.7]     #Bounds (negative to positive) outside of which the data = 0, should be a list. Use many values in the list to compare Apod widths. It will only save the first value in metadata for MAP_script!
+apodization_width=[0.5]     #Bounds (negative to positive) outside of which the data = 0, should be a list. Use many values in the list to compare Apod widths. It will only save the first value in metadata for MAP_script!
 apod_type="BH"              #Function to use for apodization: "None" "Gauss" "Triangle" "Boxcar" or "BH" (Default)
 resample = True             #Enhance resolution by cubic interpolation
 resample_factor=4           #Factor to increase data points by
@@ -40,7 +41,8 @@ mean_sub = True             #Shift the average value of the interferogram to be 
 plots = True               #Deactivate plots from FFT and prep - useful if using more than one apod width to compare.
 
 TRPLmin_OM = 1e-4           #How many orders of magnitude to plot down in y-scale for TRPL curve
-
+start_time = -10
+end_time = 50
 # =============================================================================
 # Program
 # =============================================================================
@@ -83,7 +85,7 @@ plt.yscale('log')
 AVG_map_data = np.sum(map_data,axis=1)
 
 if transfer_func:
-    norm_fname = "cuvet_norm_new.txt"
+    norm_fname = os.path.join(r"Z:\Data\PL\Ruiquan-JN powders", "cuvet_norm_new.txt")
     norm_waves, norm = load_spectrum(norm_fname)
     norm_waves, norm = interp(norm_waves, norm, start_wave, end_wave, 1)
 
@@ -98,6 +100,7 @@ for i in range(len(apodization_width)):
         
         wave_list.append(norm_waves)
     else:
+        wave, FFT_intr_trim = interp(wave, FFT_intr_trim, math.ceil(np.amin(wave)), math.floor(np.amax(wave)), 1)
         wave_list.append(wave)
         
     FFT_intr_trim_list.append(FFT_intr_trim)
@@ -126,7 +129,8 @@ integralTRPL = np.sum(map_data,axis=0)
 
 #Plot Full TRPL
 PLname = os.path.join(path, '{}_TRPLPlot.png'.format(exper_ID))
-plot_TRPL_decay(time_data, [integralTRPL], TRPLmin_OM, export=PLname, labels=[None])
+plot_TRPL_decay(time_data, [integralTRPL], TRPLmin_OM, export=PLname, labels=[None],
+                start_time = start_time, end_time = end_time)
 
 #Plot Full PL
 PLname = os.path.join(path, '{}_PLPlot.png'.format(exper_ID))
