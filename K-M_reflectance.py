@@ -18,6 +18,20 @@ matplotlib.rcParams.update({'font.family':'STIXGeneral'})
 matplotlib.rcParams.update({'mathtext.fontset':'stix'})
 
 def make_pl_tauc(ax, major_tick=0.5, minor_tick=0.1):
+    """
+    Input: a tab-limited txt file with two columns: first column wavelength and second column reflectance.
+    Specify location of this file using file_location and filename.
+    
+    Use the trim range to narrow the data and the nominal_fitrange to select a range for linear fitting.
+
+
+
+    Returns
+    -------
+    1. A plot of the normalized kubelka munk parameter (F*E)^2 with the linear fit superposed.
+    2. The fitted bandgap (x-intercept) with uncertainty determined by bootstrapping of the nominal_fitrange.
+
+    """
     file_location = r'Z:\Data\PL\Ruiquan BaZrS3 diagnostics\20220804\JN-20 1 hr\151346'
     filename = "diff_R.txt"
     def ylin(x,x_0,k):
