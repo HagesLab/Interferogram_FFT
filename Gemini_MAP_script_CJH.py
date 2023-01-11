@@ -17,7 +17,8 @@ import os
 from scipy.integrate import simpson
 import ast
 
-path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20220519\154459"
+path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20230110\175939"
+pre2023 = False                         # Whether this data is taken before 2023. Uses an older calibration file if so.
 params_from_INTR_metadata = True        #Import metadata from "...Averaged_MAP..." script - if not using this there may be bugs.
 save_data = True                        #Save all plots and TRES data
 ImportTRES = False                     #Use this to prevent recalcualting the FFT - must have "..TRES.h5" already savded
@@ -55,13 +56,13 @@ shift_factor = 0.005837467299965371       #Hard to compute shift on time-resolve
 # =============================================================================
 
 #All Plots
-timeRange = [-10,80]
-PLRange = [560.,800.]
-transfer_func = True
+timeRange = [-5,100]
+PLRange = [555.,900.]
+transfer_func = 0
 
 #TRES
-min_value = 0.001
-Gauss_Filter = True
+min_value = 10
+Gauss_Filter = False
 sigmaval = 2   #For Gauss Filter
 
 #PL Plot
@@ -85,8 +86,8 @@ overidexrange = [-10,1000]    #Only if overriding range
 #Fitting TRPL
 FitTRPL = False
 #fit_range = [[i-1,i+1] for i in range(2, 30, 2)]   #List length must match that of rangeValTRPL / if mapdata then length 1
-fit_range = [[20,30]]
-fit_on_TRES = True
+fit_range = [[50,200]]
+fit_on_TRES = False
 
 #Composite TRES
 composite_legend = True
@@ -197,7 +198,8 @@ else:
         if intrfxlims != "Full":
             plt.xlim(intrfxlims.min(),intrfxlims.max())
 
-    preFFT_pos, preFFT_map = prep_map(pos_data,map_data,apodization_width,apod_type,resample,resample_factor,shift,pad_test,padfactor,mean_sub)
+    preFFT_pos, preFFT_map = prep_map(pos_data,map_data,apodization_width,apod_type,resample,resample_factor,shift,pad_test,padfactor,mean_sub,
+                                      pre2023=pre2023)
     print("Took {} sec".format(time.time() - startTime))
 
     #Perform FFT

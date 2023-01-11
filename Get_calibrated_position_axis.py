@@ -10,17 +10,23 @@ from scipy import signal
 '''get_calibrated_position_axis computes the calibrated position axis based on the encoder position axis.
     INPUTS:
     - position_axis: position axis correspondent to the interferogram
+    - pre2023: Whether to use an older, pre-2023 calibration file. Compatibility for older data only.
     OUTPUTS:
     - calibrated_position_axis: position axis calibrated on the encoder od the positioner
 '''
 
-def get_calibrated_position_axis(position_axis):
+def get_calibrated_position_axis(position_axis, pre2023=False):
 
     # Load the calibrations file
     items = os.listdir(".")
 
+    if pre2023:
+        cali_fname = "parameters_int_pre2023.txt"
+    else:
+        cali_fname = "parameters_int.txt"
+        
     for names in items:
-        if names.endswith("parameters_int.txt"):
+        if names.endswith(cali_fname):
             filename = names
             break
 

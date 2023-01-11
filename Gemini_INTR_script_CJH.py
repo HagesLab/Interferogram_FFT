@@ -17,17 +17,19 @@ from numpy import savetxt
 import math
 
 
-path = r"Z:\Data\PL\Ruiquan BaZrS3 diagnostics\20220803\131820"
+path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20221024\174210"
 
 
 # path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20211105/115108"
 #path = r"F:\PL\Tao\20211012\125809"
+
+pre2023 = False             # Whether this data is taken before 2023. Uses an older calibration file if so.
 save_params = True          #Use this to create a txt file that can be imported into the "..._MP_script" and export Plots
 export_PL = True             # Save a .csv of wavelength/PL datasets - one PL per apodization
 
-transfer_func = 0
-start_wave =500           #For Plotting - keep in mind the LP filter value
-end_wave = 900            #For Plotting
+transfer_func =0
+start_wave =900          #For Plotting - keep in mind the LP filter value
+end_wave = 2000            #For Plotting
 pltzoomstate = False        #Zoom in around the zero position in interferogram to better observe oscillations
 pltzoomrange = [-.25,.25]   #Range to zoom in on if pltzoomstate=True
 
@@ -50,13 +52,17 @@ exper_ID = os.path.split(path)[-1]
 pos_data, intr_data = import_INTR(path)
 
 if transfer_func:
-    norm_fname = os.path.join(r"Z:\TRPL Data", "cuvet_norm_new_ext.txt")
+    norm_fname = os.path.join(r"\\10.227.108.119\share\Data\PL\Transfer functions\Micro - Intf - Vis", 
+                              "microPL_vis_intf_532LP.txt")
     norm_waves, norm = load_spectrum(norm_fname)
     norm_waves, norm = interp(norm_waves, norm, start_wave, end_wave, 1)
 
 wave_list, FFT_intr_trim_list = [], []
 for i in range(len(apodization_width)):
-    preFFT_pos, preFFT_data, shiftfactor, baseline_fit = prep_interferogram(pos_data,intr_data,apodization_width[i],apod_type=apod_type,resample=resample,resample_factor=resample_factor,shift=shift,pad_test=pad_test,padfactor=padfactor,mean_sub=mean_sub,plots=plots,pltzoom=pltzoomstate,zoom_range=pltzoomrange,baseline_sub_state=baseline_sub_state)
+    preFFT_pos, preFFT_data, shiftfactor, baseline_fit = prep_interferogram(pos_data,intr_data,apodization_width[i],apod_type=apod_type,resample=resample,resample_factor=resample_factor,
+                                                                            shift=shift,pad_test=pad_test,padfactor=padfactor,mean_sub=mean_sub,plots=plots,pltzoom=pltzoomstate,
+                                                                            zoom_range=pltzoomrange,baseline_sub_state=baseline_sub_state,
+                                                                            pre2023=pre2023)
     wave, FFT_intr_trim = FFT_intr(preFFT_pos,preFFT_data,plots=True,scale="linear",correct=False)
     
     if transfer_func:

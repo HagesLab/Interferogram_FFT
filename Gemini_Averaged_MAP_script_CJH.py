@@ -16,20 +16,23 @@ import math
 from numpy import savetxt
 import os
 
-path = r"Z:\Data\PL\Ruiquan BaZrS3 diagnostics\20220802\163134"
+path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20230110\194719"
+
+pre2023 = 0 # Whether this data is taken before 2023. Uses an older calibration file if so.
+
 save_params = 1          #Use this to create a txt file that can be imported into the "..._MAP_script"
 export_PL = 1            # Save a .csv of wavelength/PL datasets - one PL per apodization
 export_TRPL = 1            # Save a .csv of the avereraged Time/PL dataset
 
-transfer_func = False     # Normalize by a transfer function specific to the optical path
+transfer_func = 0     # Normalize by a transfer function specific to the optical path
 BKGsub = True               #Background Subtract - Generally True
 bkg_limit = -3              #ns before the TRPL peak to average the background data up to - see plot
 start_wave = 500           #For Plotting
-end_wave = 900             #For Plotting
+end_wave = 600             #For Plotting
 pltzoomstate = False        #Zoom in around the zero position in interferogram to better observe oscillations
 pltzoomrange = [-.25,.25]   #Range to zoom in on if pltzoomstate=True
 
-apodization_width=[0.5]     #Bounds (negative to positive) outside of which the data = 0, should be a list. Use many values in the list to compare Apod widths. It will only save the first value in metadata for MAP_script!
+apodization_width=[1]     #Bounds (negative to positive) outside of which the data = 0, should be a list. Use many values in the list to compare Apod widths. It will only save the first value in metadata for MAP_script!
 apod_type="BH"              #Function to use for apodization: "None" "Gauss" "Triangle" "Boxcar" or "BH" (Default)
 resample = True             #Enhance resolution by cubic interpolation
 resample_factor=4           #Factor to increase data points by
@@ -40,9 +43,9 @@ baseline_sub_state = False   #Perform IModPoly baseline subtraction if not a lin
 mean_sub = True             #Shift the average value of the interferogram to be zero
 plots = True               #Deactivate plots from FFT and prep - useful if using more than one apod width to compare.
 
-TRPLmin_OM = 1e-4           #How many orders of magnitude to plot down in y-scale for TRPL curve
+TRPLmin_OM = 1e-6           #How many orders of magnitude to plot down in y-scale for TRPL curve
 start_time = -10
-end_time = 50
+end_time = 20
 # =============================================================================
 # Program
 # =============================================================================
@@ -85,13 +88,17 @@ plt.yscale('log')
 AVG_map_data = np.sum(map_data,axis=1)
 
 if transfer_func:
-    norm_fname = os.path.join(r"Z:\Data\PL\Ruiquan-JN powders", "cuvet_norm_new.txt")
+    norm_fname = os.path.join(r"\\10.227.108.119\share\Data\PL\Transfer functions\Micro - Intf - Vis", 
+                              "microPL_vis_intf.txt")
     norm_waves, norm = load_spectrum(norm_fname)
     norm_waves, norm = interp(norm_waves, norm, start_wave, end_wave, 1)
 
 wave_list, FFT_intr_trim_list = [], []
 for i in range(len(apodization_width)):
-    preFFT_pos, preFFT_data, shiftfactor, baseline_fit = prep_interferogram(pos_data,AVG_map_data,apodization_width[i],apod_type=apod_type,resample=resample,resample_factor=resample_factor,shift=shift,pad_test=pad_test,padfactor=padfactor,mean_sub=mean_sub,plots=plots,pltzoom=pltzoomstate,zoom_range=pltzoomrange,baseline_sub_state=baseline_sub_state)
+    preFFT_pos, preFFT_data, shiftfactor, baseline_fit = prep_interferogram(pos_data,AVG_map_data,apodization_width[i],apod_type=apod_type,resample=resample,resample_factor=resample_factor,shift=shift,
+                                                                            pad_test=pad_test,padfactor=padfactor,mean_sub=mean_sub,plots=plots,pltzoom=pltzoomstate,zoom_range=pltzoomrange,
+                                                                            baseline_sub_state=baseline_sub_state,
+                                                                            pre2023=pre2023)
     wave, FFT_intr_trim = FFT_intr(preFFT_pos,preFFT_data,plots=True,scale="linear",correct=False)
     
     if transfer_func:

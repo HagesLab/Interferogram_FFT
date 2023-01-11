@@ -19,8 +19,10 @@ try:
 except ModuleNotFoundError:
     print("Warning: BaselineRemoval library not found")
 
-def prep_interferogram(pos_data,intr_data,apodization_width,apod_type="BH",mean_sub=True,resample=True,resample_factor=4,shift=False,pad_test=True,padfactor=15,plots=True,pltzoom=False,zoom_range=[-.25,0.25],baseline_sub_state=False):
-    intr_data, pos_data = Interf_calibration1D.interf_calibration1D(intr_data,pos_data)
+def prep_interferogram(pos_data,intr_data,apodization_width,apod_type="BH",mean_sub=True,resample=True,resample_factor=4,shift=False,pad_test=True,padfactor=15,
+                       plots=True,pltzoom=False,zoom_range=[-.25,0.25],baseline_sub_state=False,
+                       pre2023=False):
+    intr_data, pos_data = Interf_calibration1D.interf_calibration1D(intr_data,pos_data, pre2023)
     shiftfactor = 0
     raw_input_intr, raw_input_pos = intr_data, pos_data
     if baseline_sub_state:
@@ -184,8 +186,9 @@ def FFT_intr(preFFT_pos,preFFT_data, plots=False,correct=True,scale="linear"):
     return wave, FFT_intr_trim_full.reshape((1,len(FFT_intr_trim_full)))[0]
 
 #Need to add baseline subtraction to MAP
-def prep_map(pos_data,map_data,apodization_width,apod_type="BH",resample=True,resample_factor=2,shift=False,pad_test=True,padfactor=4,mean_sub=True):
-    map_data, pos_data = Interf_calibration2D.interf_calibration2D(map_data,pos_data)
+def prep_map(pos_data,map_data,apodization_width,apod_type="BH",resample=True,resample_factor=2,shift=False,pad_test=True,padfactor=4,mean_sub=True,
+             pre2023=False):
+    map_data, pos_data = Interf_calibration2D.interf_calibration2D(map_data,pos_data, pre2023)
     prep_build=[]
     pos_data_raw = pos_data
     if mean_sub:

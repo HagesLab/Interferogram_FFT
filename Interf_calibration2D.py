@@ -13,7 +13,7 @@ import os
 '''
 
 
-def interf_calibration2D(interf2d, pos_axis):
-    calib_pos_axis, left_index, right_index=Get_calibrated_position_axis.get_calibrated_position_axis(pos_axis)
+def interf_calibration2D(interf2d, pos_axis, pre2023=False):
+    calib_pos_axis, left_index, right_index=Get_calibrated_position_axis.get_calibrated_position_axis(pos_axis, pre2023)
     calib_interf2d = interf2d[left_index-1:right_index,:]
     return calib_interf2d, calib_pos_axis
