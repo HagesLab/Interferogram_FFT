@@ -18,6 +18,24 @@ try:
     from BaselineRemoval import BaselineRemoval
 except ModuleNotFoundError:
     print("Warning: BaselineRemoval library not found")
+    
+def locate(dir_, endswith):
+    """Find a file in directory dir_ that endswith a particular string"""
+    for ff in os.listdir(dir_):
+        if ff.endswith(endswith):
+            return os.path.join(dir_, ff)
+        
+def remove_zeros(intr_data, mtd="average"):
+    """
+    Remove zeros (missing data points) from a 1D INTR dataset.
+    By default, replaces zeros with average of two adjacent values.
+    """
+    zeroes = np.where(intr_data == 0)[0]
+    if mtd == "average":
+        intr_data[zeroes] = (np.roll(intr_data, -1) + np.roll(intr_data, 1))[zeroes] / 2
+    else:
+        raise NotImplementedError
+    return intr_data
 
 def prep_interferogram(pos_data,intr_data,apodization_width,apod_type="BH",mean_sub=True,resample=True,resample_factor=4,shift=False,pad_test=True,padfactor=15,
                        plots=True,pltzoom=False,zoom_range=[-.25,0.25],baseline_sub_state=False,
@@ -35,6 +53,7 @@ def prep_interferogram(pos_data,intr_data,apodization_width,apod_type="BH",mean_
         fcubic = interp1d(pos_data, intr_data, kind='cubic')
         pos_data = np.linspace(pos_data[0],pos_data[-1],endpoint=True,num=len(pos_data)*resample_factor)
         intr_data = fcubic(pos_data)
+
     index_pos = np.argmin(abs(pos_data))
     if shift:
         index_intr = np.argmax(intr_data)
@@ -84,6 +103,7 @@ def prep_interferogram(pos_data,intr_data,apodization_width,apod_type="BH",mean_
         plt.figure(0,dpi=120)
         plt.title("Raw Comparison")
         plt.plot(raw_input_pos, raw_input_intr,label="Raw")
+        plt.scatter(raw_input_pos, raw_input_intr,label="Raw", s=4)
         plt.plot(raw_pos, raw_intr,label="Corrected")
         plt.xlabel("Position / mm")
         plt.ylabel("Counts / a.u.")
@@ -358,8 +378,11 @@ def Fit_2exp(TRPL_data,time_data,fitrange):
     TRPL_fit = TRPL_data[low_index:high_index]
     time_fit = time_data[low_index:high_index]
 
-    popt, pcov = curve_fit(Exp2,time_fit,np.log(np.abs(TRPL_fit)))
+    popt, pcov = curve_fit(Exp2,time_fit,np.log(np.abs(TRPL_fit)), p0=[1e6,1,1e5,60],
+                           maxfev=10000)
     perr = np.sqrt(np.diag(pcov))
+    print(popt)
+    print(perr)
 
     TRPL_out = np.exp(Exp2(time_fit,*popt))
     tau1 = popt[3]
@@ -377,7 +400,7 @@ def Fit_2exp(TRPL_data,time_data,fitrange):
     label =  r'$\tau_1:\ $ {:.2f} ns, $\tau_2:\ $ {:.2f} ns, '.format(tau1, tau2)
     label += r"$\tau_{stat}:\ $" + "{:.2f} ns".format(taustat)
 
-    return TRPL_out, time_fit, label, popt, perr
+    return TRPL_out, time_fit, label
 
 def RR(time,log_B, log_dN0):
     # See Ahrenkiel book pp. 64

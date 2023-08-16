@@ -6,7 +6,7 @@ Created on Mon Nov 30 11:37:33 2020
 """
 
 # New version: FFT fixed
-from interferogram_functions import prep_interferogram,  FFT_intr
+from interferogram_functions import prep_interferogram, FFT_intr, remove_zeros
 from interferogram_io import save_metadata, save_PL, import_INTR
 from interferogram_vis import plot_PL_spectrum
 from make_norm_spec import load_spectrum, interp
@@ -17,26 +17,23 @@ from numpy import savetxt
 import math
 
 
-path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20221024\174210"
-
-
+path = r"Z:\Data\PL\Y349\diffR\5\151441"
 # path = r"E:\GEMENI DAQ\NIREOS Complete Example V12_MCS_TimeHarp_32bit Folder\Measurement\20211105/115108"
 #path = r"F:\PL\Tao\20211012\125809"
 
 pre2023 = False             # Whether this data is taken before 2023. Uses an older calibration file if so.
-save_params = True          #Use this to create a txt file that can be imported into the "..._MP_script" and export Plots
-export_PL = True             # Save a .csv of wavelength/PL datasets - one PL per apodization
+save_params =1          #Use this to create a txt file that can be imported into the "..._MP_script" and export Plots
+export_PL = 1            # Save a .csv of wavelength/PL datasets - one PL per apodization
 
-transfer_func =0
-start_wave =900          #For Plotting - keep in mind the LP filter value
-end_wave = 2000            #For Plotting
-pltzoomstate = False        #Zoom in around the zero position in interferogram to better observe oscillations
-pltzoomrange = [-.25,.25]   #Range to zoom in on if pltzoomstate=True
-
-apodization_width=[0.4]     #Bounds (negative to positive) outside of which the data = 0, should be a list. Use many values in the list to compare Apod widths
+transfer_func = 0
+start_wave= 500          #For Plotting - keep in mind the LP filter value
+end_wave =900            #For Plotting
+pltzoomstate = 0        #Zoom in around the zero position in interferogram to better observe oscillations
+pltzoomrange = [-.25,.25]  #Range to zoom in on if pltzoomstate=True
+apodization_width=[0.8]     #Bounds (negative to positive) outside of which the data = 0, should be a list. Use many values in the list to compare Apod widths
 apod_type="BH"              #Function to use for apodization: "None" "Gauss" "Triangle" "Boxcar" or "BH" (Default)
-resample = True             #Enhance resolution by cubic interpolation
-resample_factor=4           #Factor to increase data points by
+resample = True            #Enhance resolution by cubic interpolation
+resample_factor=1           #Factor to increase data points by
 shift= False                #Shift max value to be at 0 mm position - not sure it matters
 pad_test = True             #Pad the data with zeros to enhance FFT resolution
 padfactor = 16              #Total points will be filled with zeros untill 2**padfactor  -> 2**15 = 32k (default), 2**16=65k
@@ -50,6 +47,7 @@ plots = True               #Deactivate plots from FFT and prep - useful if using
 
 exper_ID = os.path.split(path)[-1]
 pos_data, intr_data = import_INTR(path)
+intr_data = remove_zeros(intr_data)
 
 if transfer_func:
     norm_fname = os.path.join(r"\\10.227.108.119\share\Data\PL\Transfer functions\Micro - Intf - Vis", 
@@ -102,7 +100,7 @@ print(wave_list[0][where_max])
 #     plt.plot(wl_to_raman(laser_exc, wave_list[i]),FFT_intr_trim_list[i],label=apod_type+' Apod '+str(apodization_width[i])+' mm')
 # plt.xlim(start_wave,end_wave)
 # plt.yscale('linear')
-# plt.ylim(0, 5e5)
+#plt.ylim(-20000, 0.35e6)
 ##########################
 
 if export_PL:
