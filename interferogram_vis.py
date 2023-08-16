@@ -11,6 +11,27 @@ from matplotlib.ticker import LogLocator
 import numpy as np
 from scipy import ndimage
 
+def plot_diffR(diffR, pl=None, title=""):
+    """
+    Plot diffuse reflectance data, and optionally PL data.
+    diffR and PL should be Nx2 arrays - first column wavelength (or energy)
+    and second column the values
+    """
+    fig, ax = plt.subplots(1,1,figsize=(2,2), dpi=240)
+    ax2 = ax.twinx()
+    ax.plot(diffR[:,0], diffR[:, 1], color='red')
+
+    ax.set_xlim(500,900)
+    ax.set_xticks([100*i for i in range(5, 10)])
+    ax.set_xlabel("wavelength [nm]")
+    ax.set_title(title)
+    ax.set_ylim(0, 6)
+    ax.set_ylabel("Kubelka Munk F", color='red')
+    if pl is not None:
+        ax2.plot(pl[:,0], pl[:,1])
+        ax2.set_ylabel("PL [cts]", color='steelblue')
+        ax2.set_ylim(0, 5)
+
 def plot_PL_spectrum(waves, spectra, labels, start_wave, end_wave, export=None, interval=None):
     fig, ax = plt.subplots(dpi=120)
     ax.set_ylabel("Counts / a.u.")
@@ -33,7 +54,6 @@ def plot_PL_spectrum(waves, spectra, labels, start_wave, end_wave, export=None, 
             ax.plot(waves,spectra)
     ax.set_xlim(start_wave,end_wave)
     ax.set_yscale('linear')
-    
     ax.legend()
     
     if export is not None:

@@ -37,6 +37,13 @@ def remove_zeros(intr_data, mtd="average"):
         raise NotImplementedError
     return intr_data
 
+def kulbeka_munk(R, std):
+    # Convert spectrum from nm to eV
+    # E = 1240 / diffR[:, 0]
+    #F *= 1240 / E**2 # jacobian transform from wavelength to energy integral
+    R /= std
+    return (1 - R)**2 / (2*R) # Kubelka Munk term
+
 def prep_interferogram(pos_data,intr_data,apodization_width,apod_type="BH",mean_sub=True,resample=True,resample_factor=4,shift=False,pad_test=True,padfactor=15,
                        plots=True,pltzoom=False,zoom_range=[-.25,0.25],baseline_sub_state=False,
                        pre2023=False):
